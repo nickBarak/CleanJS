@@ -1,0 +1,18 @@
+{
+  "name": "cleanjs",
+  "version": "1.0.0",
+  "description": "Initial Development",
+  "main": "Clean.js",
+  "scripts": {
+    "build": "parcel Clean/index.html"
+  },
+  "author": "Nick Barak",
+  "license": "ISC",
+  "devDependencies": {
+    "parcel-bundler": "^1.12.4",
+    "sass": "^1.26.2"
+  },
+  "dependencies": {
+    "idempotent-babel-polyfill": "^7.4.4"
+  }
+}
