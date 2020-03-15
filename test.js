@@ -110,20 +110,19 @@ class Private {
             }
         } else this.value = init;
 
-        if (setOn == false) {
-            const freezeObj = obj => {
-                let subObjs = [];
-                for (let entry in obj) {
-                    if (typeof(obj[entry]) === 'object') {
-                        subObjs.push(entry);
-                    }
+        const freezeObj = obj => {
+            let subObjs = [];
+            for (let entry in obj) {
+                if (typeof(obj[entry]) === 'object') {
+                    subObjs.push(entry);
                 }
-                if (subObjs.length) subObjs.forEach(subObj => { Object.freeze(obj[subObj]); freezeObj(obj[subObj]) });
-                Object.freeze(obj);
-                return obj;
-            };
-            if (typeof(this.value) === 'object') freezeObj(this.value);
+            }
+            if (subObjs.length) subObjs.forEach(subObj => { Object.freeze(obj[subObj]); freezeObj(obj[subObj]) });
+            Object.freeze(obj);
+            return obj;
         };
+
+        if (setOn == false && typeof(this.value) === 'object') freezeObj(this.value);
 
         const setObject = (target, property, assignment) => {
             const proxiesObject = {};
@@ -141,7 +140,6 @@ class Private {
 
         const handler = {
             get: (target, property, self) => {
-                console.log(target.value);
                 if (typeof(target.value) !== 'object' || Array.isArray(target.value)) { return property === 'value' ? Reflect.get(target, 'value') : Reflect.get(target.value, property)
                 } else {
                     return property === 'value' ? Reflect.get(target, 'value') : Reflect.get(target.value, property);
@@ -152,21 +150,22 @@ class Private {
                     if (property === 'value') { 
                         if (typeof(assignment) === 'object' && !Array.isArray(assignment)) {
                             setObject(target, property, assignment);
-                        } else return Reflect.set(target, 'value', assignment)
+                        } else return Reflect.set(target, 'value', assignment);
                     } else {
                         if (typeof(target.value) !== 'object' || Array.isArray(target.value)) target.value = {};
                         (typeof(assignment) === 'object' && !Array.isArray(assignment)) ? setObject(target, property, assignment) : Reflect.set(target.value, property, assignment);
                     }
-                } else throw new Error('Private variables will not mutate outside of pre-defined set conditions')
+                } else throw new Error('Private variables will not mutate outside of pre-defined set conditions');
             }
         }
-        return new Proxy(this, handler)
+        if (((typeof(init) === 'object' && !Array.isArray(init)) && init != null)) setObject(this, 'value', init);
+        return new Proxy(this, handler);
     };
 };
 
-const ary = [1,2,3];
-const obj = new Private(2, `!Array.isArray(assignment)`);
-obj.value = {a: {b: {c: 'adsf'}}, fds: 'asdf'};
-obj.a.b = {a: [ary]};
-obj.a.b[1] = 'newval';
-console.log(obj);
+// const ary = [1,2,3];
+const obj = new Private({someProp: {someOtherProp: 'somVal'}});
+// obj.value = {a: {b: {c: 'adsf'}}, fds: 'asdf'};
+// obj.a.b = {a: [ary]};
+// obj.a.b[1] = 'newval';
+console.log(obj.value);

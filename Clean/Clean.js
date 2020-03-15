@@ -16,68 +16,94 @@ export class Part {
     }
 };
 
-export class Store {
-    constructor (concern, init={}, traps={}, push=null) {
-        if (concern) { this._concern = concern 
-        } else throw new Error('Stores must be initialized with a concern');
-        this._diff = {};
-        this._init = init;
-        this.state = {};
+// export class Store {
+//     constructor (concern, init={}, traps={}, push=null) {
+//         // if (concern) {console.log(true)} else console.log(false);
+//         // if (!now) {console.log(true)} else console.log(false);
+//         if (now) now.legacy
+//         if (now && !Object.keys(now.legacy).includes(concern)) {console.log(true)} else console.log(false);
+//         this._concern = concern;
+//         // } else throw new Error('Stores must be initialized with a concern');
+//         if (concern === 'app') {
+//             this.legacy = {test: ''};
+//             this._dynasty = { app: {} }
+//         } else now.legacy = now._dynasty = concern;
+//         this._diff = {};
+//         this._init = init;
+//         this.state = {};
 
-        if (Object.entries(init).length) {
-            for (let entry in init) { this.state[entry] = init[entry] }
-        };
+//         if (Object.entries(init).length) {
+//             for (let entry in init) { this.state[entry] = init[entry] }
+//         };
 
-        const handler = {
-            get: (target, prop, self) => {
-                if (prop in this._diff) { delete this._diff[prop] }
-                return ['_concern', '_diff', '_init', 'state', '__clear__'].includes(prop) ? target[prop] : Reflect.get(target.state, prop, self)
-            },
-            set: (target, prop, value, self) => {
-                if ('concern,diff,init,state'.match(prop.replace(/_/g, '').toLowerCase())) {
-                    console.log('State items may not resemble top-level properties')
-                } else this._diff[prop] = this.state[prop] = value;
-                return true;
-            }
-        };
+//         const handler = {
+//             get: (target, property, self) => {
+//                 if (property === 'check') Reflect.get(target, property, self)
+//                 if (['_concern', '_diff', '_init', 'state', 'legacy', '_dynasty'].includes(property)) console.log(target[property]);
+//                 if (property === 'target') console.log(target);
+//                 if (property in this._diff) { delete this._diff[property] }
+//                 return ['_concern', '_diff', '_init', 'state', '__clear__', 'check'].includes(property) ? target[property] : Reflect.get(target.state, property, self)
+//             },
+//             set: (target, property, value, self) => {
+//                 if ('concern,diff,init,state'.match(property.replace(/_/g, '').toLowerCase())) {
+//                     throw new Error('State items may not resemble top-level properties')
+//                 } else {
+//                     if (property === '_dynasty') { target._dynasty[/*document.querySelector('part').getAttribute('parent')*/'app'][value] = {}; true }
+//                     if (property === 'legacy') { this.legacy[value] = {}; true }
+//                     if (property === 'legacyExtension') { this.legacy[value[0]] = value[1]; true }
+//                     if (property === 'onClear') { now.legacyExtension = [this._concern, value]; true
+//                     } else this._diff[property] = this.state[property] = value; return true;
+//                 }
+//                 return true;
+//             }
+//         };
 
-        const handlerInsert = (trap, plus) => {
-            let val = handler[trap];
-            val = `${val}`.split('return');
-            val.splice(1, 0, 'return');
-            val.splice(1, 0, plus);
-            val.unshift('(');
-            val.push(')');
-            handler[trap] = eval(val.join(''));
-        }
+//         const handlerInsert = (trap, plus) => {
+//             let value = handler[trap];
+//             value = `${value}`.split('return');
+//             value.splice(1, 0, 'return');
+//             value.splice(1, 0, plus);
+//             value.unshift('(');
+//             value.push(')');
+//             handler[trap] = eval(value.join(''));
+//         }
         
-        if (Object.entries(traps).length) {
-            for (let trap in traps) { 
-                if (trap === 'set' || trap === 'get') {
-                    handlerInsert(trap, `${traps[trap]}`);
-                } else handler[trap] = eval(traps[trap]);
-            }
-            if (push) {
-                for (trap in handler) {
-                    handlerInsert(trap, `\nif (this._diff.length) {
-                        for (let prop in this._diff) { push[prop] = this._diff[prop] }
-                    }\n`);
-                }
-            }
-        }
+//         if (Object.entries(traps).length) {
+//             for (let trap in traps) { 
+//                 if (trap === 'set' || trap === 'get') {
+//                     handlerInsert(trap, `${traps[trap]}`);
+//                 } else handler[trap] = eval(traps[trap]);
+//             }
+//             if (push) {
+//                 for (trap in handler) {
+//                     handlerInsert(trap, `\nif (this._diff.length) {
+//                         for (let property in this._diff) { push[property] = this._diff[property] }
+//                     }\n`);
+//                 }
+//             }
+//         }
 
-        return new Proxy(this, handler)
-    };
+//         return new Proxy(this, handler)
+//     };
 
-    __clear__() {
-        for (let prop in this.state) { delete this.state[prop] }
-        if (Object.entries(this._init).length) {
-                for (let prop in this._init) { this[prop] = this._init[prop] }
-        }
-    };
-};
+//     check(what) { what ? this[what] : this.target };
 
-export const now = new Store('app');
+//     __clear__() {
+//         for (let property in this.state) { delete this.state[property] }
+//         if (Object.entries(now.legacy[this._concern]).length) {
+//             for (let property in now.legacy[this._concern]) { this[property] = now.legacy[this._concern][property] }
+//         }
+//     };
+    
+//     __fullclear__() {
+//         for (let property in this.state) { delete this.state[property] }
+//         if (Object.entries(this._init).length) {
+//             for (let property in this._init) { this[property] = this._init[property] }
+//         }
+//     }
+// };
+
+// export const now = new Store('app');
 
 export class Private {
     constructor(init, setOn) {
@@ -96,18 +122,7 @@ export class Private {
         } else this.value = init;
 
         if (setOn == false) {
-            const freezeObj = obj => {
-                let subObjs = [];
-                for (let entry in obj) {
-                    if (typeof(obj[entry]) === 'object') {
-                        subObjs.push(entry);
-                    }
-                }
-                if (subObjs.length) subObjs.forEach(subObj => { Object.freeze(obj[subObj]); freezeObj(obj[subObj]) });
-                Object.freeze(obj);
-                return obj;
-            };
-            if (typeof(this.value) === 'object') freezeObj(this.value);
+            if (typeof(this.value) === 'object') freeze(this.value, true);
         };
 
         const setObject = (target, property, assignment) => {
@@ -126,7 +141,6 @@ export class Private {
 
         const handler = {
             get: (target, property, self) => {
-                console.log(target.value);
                 if (((typeof(target.value) !== 'object' || Array.isArray(target.value)) || target.value === null)) { return property === 'value' ? Reflect.get(target, 'value') : Reflect.get(target.value, property)
                 } else {
                     return property === 'value' ? Reflect.get(target, 'value') : Reflect.get(target.value, property);
@@ -228,14 +242,14 @@ export const live = (live=true) => active('display', live);
 export const ajax = (method, path, reqType, resType, body, cb) => {
     let xhr = new XMLHttpRequest();
     xhr.open(method, path);
-    xhr.setRequestHeader('Content-Type', switchType(reqType));
-    xhr.setRequestHeader('Accept', switchType(resType));
+    xhr.setRequestHeader('Content-Type', switchHeader(reqType));
+    xhr.setRequestHeader('Accept', switchHeader(resType));
     xhr.send(body);
     xhr.onload = _=> cb;
 }
 export const ajaxGet = (path, cb) => ajax('GET', path, 'json', 'json', '', cb);
 
-const switchType = type => {
+const switchHeader = type => {
     switch (type) {
         //aplication
         case 'json': type = 'application/json'; break;
@@ -279,7 +293,7 @@ const switchType = type => {
 
 //hydrate data (join tables)
 
-let table = (data) => {
+export const table = (data) => {
     let table = elt('table', 'new');
     let columns = elt('tr', 'new');
     for (let column in data[0]) {
@@ -298,8 +312,74 @@ let table = (data) => {
     }
 }
 
+export const combine = (...objs) => {
+    const combination = {};
+    for (let obj in objs) {
+        for (let key in obj) {
+            if (key in combination) {
+                throw new Error(`Duplicate key: ${key}`);
+            } else combination[key] = obj[key];
+        }
+    }
+    return combination;
+};
+
+export const freeze = (obj, permanent=true) => {
+    Object.keys(obj).forEach(key => {
+        if (((typeof(obj[key]) === 'object' && !Array.isArray(obj[key])) && obj[key] != null)) {
+            if (permanent) { Object.freeze(obj[key])
+            } else {
+                freeze(obj[key], false); Object.defineProperty(obj, key, {configurable: true, enumerable: true, writable: false});
+            }
+            Object.preventExtensions(obj[key]);
+        } else Object.defineProperty(obj, key, {configurable: true, enumerable: true, writable: false});
+    });
+    if (permanent) Object.freeze(obj);
+    Object.preventExtensions(obj);
+    return obj;
+};
+
+export const thaw = obj => {
+    Object.keys(obj).forEach(key => {
+        Object.defineProperty(obj, key, {writable: true});
+        if (((typeof(obj[key]) === 'object' && !Array.isArray(obj[key])) && obj[key] != null)) thaw(obj[key])
+    });
+    console.log('Object has been thawed but remains non-extensible');
+    return obj;
+}
+
 
 // Animation
 
 //slideup / slidedown, slideleft, slideright
 //requestAnimationFrame();
+
+
+export default {
+    Part,
+    // Store,
+    // now,
+    Private,
+    family,
+    list,
+    ul,
+    ol,
+    select,
+    elt,
+    on,
+    sift,
+    show,
+    hide,
+    kill,
+    revive,
+    transition,
+    active,
+    shown,
+    live,
+    ajax,
+    ajaxGet,
+    table,
+    combine,
+    freeze,
+    thaw
+};
