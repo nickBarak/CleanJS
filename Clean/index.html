@@ -11,10 +11,20 @@
 </head>
 <body>
     <script>
+
+        // Put code to load first here
         class Store {
             constructor (concern, init={}, traps={}, push=null) {
-                if (concern) { this._concern = concern 
-                } else throw new Error('Stores must be initialized with a concern');
+                // if (concern) {console.log(true)} else console.log(false);
+                // if (!now) {console.log(true)} else console.log(false);
+                if (now) now.legacy
+                if (now && !Object.keys(now.legacy).includes(concern)) {console.log(true)} else console.log(false);
+                this._concern = concern;
+                // } else throw new Error('Stores must be initialized with a concern');
+                if (concern === 'app') {
+                    this.legacy = {test: ''};
+                    this._dynasty = { app: {} }
+                } else now.legacy = now._dynasty = concern;
                 this._diff = {};
                 this._init = init;
                 this.state = {};
@@ -22,42 +32,51 @@
                 if (Object.entries(init).length) {
                     for (let entry in init) { this.state[entry] = init[entry] }
                 };
+
                 const handler = {
-                    get: (target, prop, self) => {
-                        if (prop in this._diff) { delete this._diff[prop] }
-                        return ['_concern', '_diff', '_init', 'state', '__clear__'].includes(prop) ? target[prop] : Reflect.get(target.state, prop, self)
+                    get: (target, property, self) => {
+                        console.log(property)
+                        if (property === 'check') Reflect.get(target, property, self)
+                        if (['_concern', '_diff', '_init', 'state', 'legacy', '_dynasty'].includes(property)) console.log(target[property]);
+                        if (property === 'target') console.log(target);
+                        if (property in this._diff) { delete this._diff[property] }
+                        return ['_concern', '_diff', '_init', 'state', '__clear__', 'check'].includes(property) ? target[property] : Reflect.get(target.state, property, self)
                     },
-                    set: (target, prop, value, self) => {
-                        if ('concern,diff,init,state'.match(prop.replace(/_/g, '').toLowerCase())) {
+                    set: (target, property, value, self) => {
+                        if ('concern,diff,init,state'.match(property.replace(/_/g, '').toLowerCase())) {
                             console.log('State items may not resemble top-level properties')
-                        } else this._diff[prop] = this.state[prop] = value;
+                        } else {
+                            if (property === '_dynasty') { target._dynasty[/*document.querySelector('part').getAttribute('parent')*/'app'][value] = {}; true }
+                            if (property === 'legacy') { this.legacy[value] = {}; true }
+                            if (property === 'legacyExtension') { this.legacy[value[0]] = value[1]; true }
+                            if (property === 'onClear') { now.legacyExtension = [this._concern, value]; true
+                            } else this._diff[property] = this.state[property] = value; return true;
+                        }
                         return true;
                     }
                 };
+
+                const handlerInsert = (trap, plus) => {
+                    let value = handler[trap];
+                    value = `${value}`.split('return');
+                    value.splice(1, 0, 'return');
+                    value.splice(1, 0, plus);
+                    value.unshift('(');
+                    value.push(')');
+                    handler[trap] = eval(value.join(''));
+                }
                 
                 if (Object.entries(traps).length) {
                     for (let trap in traps) { 
                         if (trap === 'set' || trap === 'get') {
-                            let val = handler[trap];
-                            val = `${val}`.split('return');
-                            val.splice(1, 0, 'return');
-                            val.splice(1, 0, `${traps[trap]}`);
-                            val.unshift('(');
-                            val.push(')');
-                            handler[trap] = eval(val.join(''));
+                            handlerInsert(trap, `${traps[trap]}`);
                         } else handler[trap] = eval(traps[trap]);
                     }
                     if (push) {
                         for (trap in handler) {
-                            let val = handler[trap];
-                            val = `${val}`.split('return');
-                            val.splice(1, 0, 'return');
-                            val.splice(1, 0, `\nif (this._diff.length) {
-                                for (let prop in this._diff) { push[prop] = this._diff[prop] }
+                            handlerInsert(trap, `\nif (this._diff.length) {
+                                for (let property in this._diff) { push[property] = this._diff[property] }
                             }\n`);
-                            val.unshift('(');
-                            val.push(')')
-                            handler[trap] = eval(val.join(''));
                         }
                     }
                 }
@@ -65,17 +84,84 @@
                 return new Proxy(this, handler)
             };
 
+            check(what) { what ? this[what] : this.target };
+
             __clear__() {
-                for (let prop in this.state) { delete this.state[prop] }
-                if (Object.entries(this._init).length) {
-                        for (let prop in this._init) { this[prop] = this._init[prop] }
+                for (let property in this.state) { delete this.state[property] }
+                if (Object.entries(now.legacy[this._concern]).length) {
+                    for (let property in now.legacy[this._concern]) { this[property] = now.legacy[this._concern][property] }
                 }
             };
+            
+            __fullclear__() {
+                for (let property in this.state) { delete this.state[property] }
+                if (Object.entries(this._init).length) {
+                    for (let property in this._init) { this[property] = this._init[property] }
+                }
+            }
         };
 
-        const now = new Store('app');
+        // const now = new Store('app');
     </script>
-    <script>
+    <script defer>
+        // Put code to load last here
+
+        class Private {
+            constructor(init, setOn) {
+
+                if (typeof(setOn) === 'undefined') throw new Error('Private variables must be initialized with set conditions')
+                this.value = typeof(init === 'object') ? {is: {}} : {is: ''};
+
+                if (typeof(init) === 'object') {
+                    if (init === null) {
+                        this.value.is = null;
+                    } else {
+                        if (Object.entries(init).length) { for (let entry in init) this.value.is[entry] = init[entry] }
+                    }
+                } else this.value.is = init;
+
+                const handler = {
+                    get: (target, property, self) => {
+                        if (typeof(target.value.is) !== 'object' || Array.isArray(target.value.is)) { return property === 'value' ? Reflect.get(target.value, 'is') : Reflect.get(target.value.is, property)
+                        } else {
+                            return Reflect.get(target.value.is, property);
+                        }
+                    },
+                    set: (target, property, assignment) => {
+                        console.log('setting', property, 'to', assignment)
+                        if (setOn) {
+                            if (property === 'value') { 
+                                if (typeof(assignment) === 'object' && !Array.isArray(assignment)) {
+                                    if (typeof(target.value.is) !== 'object' || Array.isArray(target.value.is)) target.value.is = {};
+                                    let val;
+                                    let something = [];
+                                    // do {
+                                    //     for (let entry in assignment) {
+                                    //         new Proxy({value: {is: val}}, handler);
+                                            
+                                    //     }
+                                    // } while (typeof(val) === 'object' || !Array.isArray(target.value.is));
+                                    Reflect.set(target.value.is, entry, newProxy);
+                                } else return Reflect.set(target.value, 'is', assignment)
+                            } else {
+                                if (typeof(target.value.is) !== 'object' || Array.isArray(target.value.is)) target.value.is = {};
+                                
+                                return Reflect.set(target.value.is, property, new Proxy({value: {is: assignment}}, handler))
+                            }
+                        }
+                    }
+                }
+                return new Proxy(this, handler)
+            };
+
+            // read(from) { }
+        };
+        
+        // let privVar = new Private({a: {b: 25}}, true);
+        // privVar.a.b = {c: 'l3', c2: 'l3p2'};
+        // privVar.b = {d: {e: 'f'}, g: {h: 90, q: {p: [4,'hoho', null]}}};
+        // // console.log(privVar)
     </script>
+    <script src='../test.js'></script>
 </body>
 </html>

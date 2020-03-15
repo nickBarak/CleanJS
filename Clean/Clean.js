@@ -27,6 +27,7 @@ export class Store {
         if (Object.entries(init).length) {
             for (let entry in init) { this.state[entry] = init[entry] }
         };
+
         const handler = {
             get: (target, prop, self) => {
                 if (prop in this._diff) { delete this._diff[prop] }
@@ -39,30 +40,28 @@ export class Store {
                 return true;
             }
         };
+
+        const handlerInsert = (trap, plus) => {
+            let val = handler[trap];
+            val = `${val}`.split('return');
+            val.splice(1, 0, 'return');
+            val.splice(1, 0, plus);
+            val.unshift('(');
+            val.push(')');
+            handler[trap] = eval(val.join(''));
+        }
         
         if (Object.entries(traps).length) {
             for (let trap in traps) { 
                 if (trap === 'set' || trap === 'get') {
-                    let val = handler[trap];
-                    val = `${val}`.split('return');
-                    val.splice(1, 0, 'return');
-                    val.splice(1, 0, `${traps[trap]}`);
-                    val.unshift('(');
-                    val.push(')');
-                    handler[trap] = eval(val.join(''));
+                    handlerInsert(trap, `${traps[trap]}`);
                 } else handler[trap] = eval(traps[trap]);
             }
             if (push) {
                 for (trap in handler) {
-                    let val = handler[trap];
-                    val = `${val}`.split('return');
-                    val.splice(1, 0, 'return');
-                    val.splice(1, 0, `\nif (this._diff.length) {
+                    handlerInsert(trap, `\nif (this._diff.length) {
                         for (let prop in this._diff) { push[prop] = this._diff[prop] }
                     }\n`);
-                    val.unshift('(');
-                    val.push(')')
-                    handler[trap] = eval(val.join(''));
                 }
             }
         }
@@ -79,6 +78,76 @@ export class Store {
 };
 
 export const now = new Store('app');
+
+export class Private {
+    constructor(init, setOn) {
+
+        if (typeof(setOn) === 'undefined') setOn = false;
+        this.value = (typeof(init === 'object')) ? {} : '';
+
+        if (typeof(init) === 'object') {
+            if (init === null) {
+                this.value = null;
+            } else if (Array.isArray(init)) {
+                this.value = init;
+            } else {
+                for (let entry in init) this.value[entry] = init[entry];
+            }
+        } else this.value = init;
+
+        if (setOn == false) {
+            const freezeObj = obj => {
+                let subObjs = [];
+                for (let entry in obj) {
+                    if (typeof(obj[entry]) === 'object') {
+                        subObjs.push(entry);
+                    }
+                }
+                if (subObjs.length) subObjs.forEach(subObj => { Object.freeze(obj[subObj]); freezeObj(obj[subObj]) });
+                Object.freeze(obj);
+                return obj;
+            };
+            if (typeof(this.value) === 'object') freezeObj(this.value);
+        };
+
+        const setObject = (target, property, assignment) => {
+            const proxiesObject = {};
+            for (let entry in assignment) {
+                const proxify = obj => {
+                    return new Proxy({value: Object.keys(obj).reduce((targ, key) => {
+                        targ[key] = (((typeof(obj[key]) === 'object' && !Array.isArray(obj[key])) && obj[key] != null)) ? proxify(obj[key]) : obj[key];
+                        return targ
+                    }, {})}, handler);
+                };
+                proxiesObject[entry] = (((typeof(assignment[entry]) !== 'object' || Array.isArray(assignment[entry])) || assignment[entry] === null)) ? assignment[entry] : proxify(assignment[entry]);
+            };
+            return property === 'value' ? Reflect.set(target, 'value', proxiesObject) : Reflect.set(target.value, property, new Proxy({value: proxiesObject}, handler));
+        };
+
+        const handler = {
+            get: (target, property, self) => {
+                console.log(target.value);
+                if (((typeof(target.value) !== 'object' || Array.isArray(target.value)) || target.value === null)) { return property === 'value' ? Reflect.get(target, 'value') : Reflect.get(target.value, property)
+                } else {
+                    return property === 'value' ? Reflect.get(target, 'value') : Reflect.get(target.value, property);
+                }
+            },
+            set: (target, property, assignment) => {
+                if (eval(setOn)) {
+                    if (property === 'value') { 
+                        if (((typeof(assignment) === 'object' && !Array.isArray(assignment)) && assignment != null)) {
+                            setObject(target, property, assignment);
+                        } else return Reflect.set(target, 'value', assignment)
+                    } else {
+                        if (((typeof(target.value) !== 'object' || Array.isArray(target.value)) || target.value === null)) target.value = {};
+                        (((typeof(assignment) === 'object' && !Array.isArray(assignment)) && assignment != null)) ? setObject(target, property, assignment) : Reflect.set(target.value, property, assignment);
+                    }
+                } else throw new Error('Private variables will not mutate outside of pre-defined set conditions')
+            }
+        }
+        return new Proxy(this, handler)
+    };
+};
 
 
 // DOM Manipulation

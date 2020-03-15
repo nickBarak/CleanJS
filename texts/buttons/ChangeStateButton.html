@@ -1,14 +1,19 @@
-<part id="ChangeStateButton" parent="body" index="2" params="null">
+<part id="ChangeStateButton" parent="app" index="2" params="null">
     <button piece="changeStateBtn"></button>
 </part>
 
 <script>
-    const changeStateBtn = document.querySelector('[piece=changeStateBtn]');
-    const stateBtnStore = new Store(
-        'stateBtn', 
-        { text: 'Success!'},
-        { set: 'if (prop === \'text\') changeStateBtn.innerHTML = value;' }
-    );
-    changeStateBtn.addEventListener('click', _=> stateBtnStore.text = stateBtnStore.text === 'Try changing state!' ? 'Success!' : 'Try changing state!');
-    changeStateBtn.click();
+    // const changeStateBtn = document.querySelector('[piece=changeStateBtn]');
+    // const stateBtnStore = new Store(
+    //     'stateBtn', 
+    //     { text: 'Success!' },
+    //     { set: 'if (prop === \'text\') changeStateBtn.innerHTML = value;' }
+    // );
+    // changeStateBtn.addEventListener('click', _=> stateBtnStore.text = stateBtnStore.text === 'Try changing state!' ? 'Success!' : 'Try changing state!');
+    // changeStateBtn.click();
+    // stateBtnStore.onClear = {someKey: 'someVal'};
+    // now.check()
+    // let apps = { dynasty: { app: {} } } 
+    // console.log(now)
+    // now.check('target')
 </script>
