@@ -163,7 +163,6 @@ export class Private {
     };
 };
 
-
 // DOM Manipulation
 
 export const family = (...members) => members.forEach((elt, i, elts) => { if (i > 0) elts[i-1].appendChild(elt) });
@@ -180,16 +179,16 @@ export const select = (contents, className=false, id=false) => list('select', 'o
 
 export const elt = (name, by) => {
     switch (by) {
-        default: document.querySelector(name); break;
-        case 'all': document.querySelectorAll(name); break;
-        case 'new': document.createElement(name); break;
-        case 'id': document.getElementById(name); break;
-        case 'class': document.getElementsByClassName(name)[0]; break;
-        case 'classes': document.getElementsByClassName(name); break;
-        case 'tag': document.getElementsByTagName(name)[0]; break;
-        case 'tags': document.getElementsByTagName(name); break;
-        case 'name': document.getElementsByName(name)[0]; break;
-        case 'names': document.getElementsByName(name);
+        default: return document.querySelector(name);
+        case 'all': return document.querySelectorAll(name);
+        case 'new': return document.createElement(name);
+        case 'id': return document.getElementById(name);
+        case 'class': return document.getElementsByClassName(name)[0];
+        case 'classes': return document.getElementsByClassName(name);
+        case 'tag': return document.getElementsByTagName(name)[0];
+        case 'tags': return document.getElementsByTagName(name);
+        case 'name': return document.getElementsByName(name)[0];
+        case 'names': return document.getElementsByName(name);
     }
 }
 
@@ -197,6 +196,8 @@ export const on = (event, elt, cb, preventDefault=true) => elt.addEventListener(
     if (preventDefault) evt.preventDefault();
     cb();
 })
+
+export const html = (el, inner) => elt(el).innerHTML = inner;
 
 
 // Function Composition
@@ -214,6 +215,8 @@ export const sift = (...i) => {
                         ? res[0]
                         : res[0][0]
 }
+
+//currying
 
 
 // Part Activation
@@ -252,40 +255,39 @@ export const ajaxGet = (path, cb) => ajax('GET', path, 'json', 'json', '', cb);
 const switchHeader = type => {
     switch (type) {
         //aplication
-        case 'json': type = 'application/json'; break;
-        case 'www': type = 'application/x-www-urlencoded'; break;
-        case 'js': type = 'application/javascript'; break;
-        case 'ogg': type = 'application/ogg'; break;
-        case 'pdf': type = 'application/pdf'; break;
-        case 'flash': type = 'application/x-shockwave-flash'; break;
-        case 'zip': type = 'application/zip'; break;
+        case 'json': return 'application/json';
+        case 'www': return 'application/x-www-urlencoded';
+        case 'js': return 'application/javascript';
+        case 'ogg': return 'application/ogg';
+        case 'pdf': return 'application/pdf';
+        case 'flash': return 'application/x-shockwave-flash';
+        case 'zip': return 'application/zip';
         // text
-        case 'css': type = 'text/css'; break;
-        case 'csv': 'text/csv'; break;
-        case 'html': type = 'text/html'; break;
-        case 'plain': type = 'text/plain'; break;
+        case 'css': return 'text/css';
+        case 'csv': 'text/csv';
+        case 'html': return 'text/html';
+        case 'plain': return 'text/plain';
         // image
-        case 'gif': type = 'image/gif'; break;
-        case 'jpeg': type = 'image/jpeg'; break;
-        case 'png': type = 'image/png'; break;
-        case 'tiff': type = 'image/tiff'; break;
-        case 'icon': type = 'image/x-icon'; break;
+        case 'gif': return 'image/gif';
+        case 'jpeg': return 'image/jpeg';
+        case 'png': return 'image/png';
+        case 'tiff': return 'image/tiff';
+        case 'icon': return 'image/x-icon';
         // audio
-        case 'wav': type = 'audio/x-wav'; break; 
+        case 'wav': return 'audio/x-wav'; 
         // video
-        case 'quicktime': type = 'video/quicktime'; break;    
-        case 'msvideo': type = 'video/x-msvideo'; break;    
-        case 'flv': type = 'video/x-flv'; break;   
-        case 'webm': type = 'video/webm'; break; 
+        case 'quicktime': return 'video/quicktime';    
+        case 'msvideo': return 'video/x-msvideo';    
+        case 'flv': return 'video/x-flv';   
+        case 'webm': return 'video/webm'; 
         // multipart
-        case 'mixed': type = 'multipart/mixed'; break;    
-        case 'alt': type = 'multipart/alternative'; break;   
-        case 'related': type = 'multipart/related'; break;  
-        case 'form': type = 'multipart/form-data'; break;
+        case 'mixed': return 'multipart/mixed';    
+        case 'alt': return 'multipart/alternative';   
+        case 'related': return 'multipart/related';  
+        case 'form': return 'multipart/form-data';
         
-        default: type = type;
+        default: return type;
     }
-    return type;
 };
 
 
@@ -354,7 +356,6 @@ export const thaw = obj => {
 //slideup / slidedown, slideleft, slideright
 //requestAnimationFrame();
 
-
 export default {
     Part,
     // Store,
@@ -367,6 +368,7 @@ export default {
     select,
     elt,
     on,
+    html,
     sift,
     show,
     hide,

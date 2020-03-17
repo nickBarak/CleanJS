@@ -4,7 +4,7 @@
   "description": "Initial Development",
   "main": "Clean.js",
   "scripts": {
-    "build": "parcel Clean/index.html"
+    "start": "node Clean/compile.js && parcel Clean/index.html"
   },
   "author": "Nick Barak",
   "license": "ISC",
@@ -13,6 +13,10 @@
     "sass": "^1.26.2"
   },
   "dependencies": {
-    "idempotent-babel-polyfill": "^7.4.4"
+    "compile.js": "^1.1.4",
+    "dexie": "^2.0.4",
+    "fs": "0.0.1-security",
+    "idempotent-babel-polyfill": "^7.4.4",
+    "test.js": "^1.0.0"
   }
 }
