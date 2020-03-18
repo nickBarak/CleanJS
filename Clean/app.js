@@ -1,2 +1,11 @@
+import * as nothing from './Clean.js';
 
-// This is where your app will be compiled
+const Home = (someParam, someOtherParam) => {
+    const homeStore = new Store('home');
+    var u0= 'sojdk,'
+    console.log(now);
+};
+
+const Footer = (pets, age, name) => {
+    let a = 'b';
+};
