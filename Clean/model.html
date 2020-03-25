@@ -14,24 +14,23 @@
 </head>
 <body>
 
-    <Header id=Header init="{asd: 'asdfsadf'}" traps="asdf" data="{. sdfl}"><a href="">asdf</a></Header>
-    <Home id='Home, mate'></Home>
-    <ChangeStateButton id=""></ChangeStateButton>
-    <!-- <MyList id="MyList" init="" traps="" link="" data="[fluffy, charles], 23, 'Jimmy Neutron'"></MyList>
-        <BinManager id="" init="{[fluffy, charles], 23, 'Jimmy Neutron'[fluffy, charles], 23, 'Jimmy Neutron'[fluffy, charles], 23, 'Jimmy Neutron'}," traps="" data=""></BinManager>
+    <!-- <Header id=Header init="{asd: 'asdfsadf'}" traps="asdf" ></Header>
+    <!-- <Home id='Home, mate'></Home> -->
+    <!-- <ChangeStateButton id="btn_-2234"></ChangeStateButton> -->
+    <!-- <MyList id="MyList" init="" traps="" link=""></MyList>
+        <BinManager id="" init="{[fluffy, charles], 23, 'Jimmy Neutron'[fluffy, charles], 23, 'Jimmy Neutron'[fluffy, charles], 23, 'Jimmy Neutron'}," traps=""></BinManager>
         <!--<Bin id="Bin_
             ssdf
-        23" data=""></Bin> -->
-        <!-- <Movie id="Movie_5" data="{directors: ['aldjf', 'asdlkjj'], rating: R}"></Movie> -->
+        23"></Bin> -->
+        <!-- <Movie id="Movie_5"></Movie> -->
     <!-- </MyList> -->
-    <Footer id="" data="{dogs: [fluffy, charles], age: 23}"></Footer>
+    <!-- <Footer id=""></Footer> -->
 
 </body>
 <script>
-    console.log(document.getElementById('Home, mate'))
     // Put code to load first here
     class Store {
-        constructor (concern, init={}, traps={}, push=null) {
+        constructor (concern, script, init={}, traps={}, push=null) {
             // if (concern) {console.log(true)} else console.log(false);
             // if (!now) {console.log(true)} else console.log(false);
             // if (now) now.legacy
@@ -45,6 +44,9 @@
             this._diff = {};
             this._init = init;
             this.state = {};
+            this.links = {};
+            this._script = script;
+            this._fragment = new DocumentFragment();
 
             if (Object.entries(init).length) {
                 for (let entry in init) { this.state[entry] = init[entry] }
@@ -52,12 +54,11 @@
 
             const handler = {
                 get: (target, property, self) => {
-                    console.log(property)
                     if (property === 'check') Reflect.get(target, property, self)
-                    if (['_concern', '_diff', '_init', 'state', 'legacy', '_dynasty'].includes(property)) console.log(target[property]);
-                    if (property === 'target') console.log(target);
+                    if (['CHECK _concern', 'CHECK _diff', 'CHECK _init', 'CHECK state', 'CHECK legacy', 'CHECK _dynasty', 'CHECK links'].includes(property)) console.log(target[property]);
+                    if (property === 'CHECK target') console.log(target);
                     if (property in this._diff) { delete this._diff[property] }
-                    return ['_concern', '_diff', '_init', 'state', '__clear__', 'check'].includes(property) ? target[property] : Reflect.get(target.state, property, self)
+                    return ['_concern', '_diff', '_init', 'state', '__clear__', 'check', 'toggle', 'link', 'links', '_fragment'].includes(property) ? target[property] : Reflect.get(target.state, property, self)
                 },
                 set: (target, property, value, self) => {
                     if ('concern,diff,init,state'.match(property.replace(/_/g, '').toLowerCase())) {
@@ -67,7 +68,8 @@
                         if (property === 'legacy') { this.legacy[value] = {}; true }
                         if (property === 'legacyExtension') { this.legacy[value[0]] = value[1]; true }
                         if (property === 'onClear') { now.legacyExtension = [this._concern, value]; true
-                        } else this._diff[property] = this.state[property] = value; return true;
+                        } else this._diff[property] = this.state[property] = value;
+                        this.render();
                     }
                     return true;
                 }
@@ -101,7 +103,32 @@
             return new Proxy(this, handler)
         };
 
-        check(what) { what ? this[what] : this.target };
+        check(what) { what ? this['CHECK '+what] : this['CHECK target'] };
+
+        link(state, ...observers) { 
+            if (!this.links[state]) this.links[state] = [];
+            observers.forEach(observer => this.links[state].push([`[part='${this._concern}'] ${observer[0]}`, observer[1]]))
+        };
+
+        toggle(etarget, state, state1, state2, event='click') { 
+            document.querySelector(`[part='${this._concern}'] ${etarget}`).addEventListener(event, _=> this[state] = (this[state] === state1) ? state2 : state1)
+        };
+
+        render() {
+            if (this._concern !== 'app') {
+                let part = document.querySelector(`[part='${this._concern}']`),
+                    clone = part.cloneNode('deep');
+                this._fragment.appendChild(clone);
+                for (let diff in this._diff) {
+                    if (diff in this.links) {
+                        this.links[diff].forEach(link => this._fragment.querySelector(link[0])[link[1]] = this._diff[diff]);
+                    }
+                }
+                part.replaceWith(this._fragment);
+                this._script();
+            }
+            return true;
+        };
 
         __clear__() {
             for (let property in this.state) { delete this.state[property] }
@@ -119,6 +146,43 @@
     };
 
     const now = new Store('app');
+
+    // const partCounts = {
+    //     Home: 0,
+    //     Header: 1
+    // };
+
+//     const Home = (init={}, traps={}) => {
+//         const instance = (_=> {
+//             const partName = `Home${partCounts.Home ? ' '+partCounts.Home : ''}`;
+//             partCounts.Home++;
+//             let newElt = document.createElement('Home');
+//             newElt.setAttribute('part', partName);
+//             newElt.setAttribute('id', 'Home, mate');
+//             newElt.innerHTML = homeContent(init)`<div><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320"><path fill="#ddd" fill-opacity="1" d="M0,160L48,138.7C96,117,192,75,288,58.7C384,43,480,53,576,85.3C672,117,768,171,864,197.3C960,224,1056,224,1152,192C1248,160,1344,96,1392,64L1440,32L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path></svg></div>
+// <h1 id="title">Welcome to CleanJS</h1>
+// <ChangeStateButton id="homeStateBtn"><button id="changeStateBtn"></button>
+// <Footer id="newHome"><div id="footerDiv">and your <strong>footer</strong> last</div></Footer></ChangeStateButton>
+// <div id="lowerSvg"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 319"><path fill="#7a7aa3" fill-opacity="1" d="M0,160L48,138.7C96,117,192,75,288,58.7C384,43,480,53,576,85.3C672,117,768,171,864,197.3C960,224,1056,224,1152,192C1248,160,1344,96,1392,64L1440,32L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path></svg></div>`;
+//             document.body.appendChild(newElt);
+//             // console.log(document.querySelector(`[part='${partName}']`))            
+//             const script = _=> {
+//                 store.toggle('#title', 'titleText', 'Enjoy your stay', 'Welcome to CleanJS');
+//                 store.link('titleText', ['#title', 'textContent']);
+//             },
+            
+//             store = new Store(partName, script, init, traps);
+//             script();
+//             return script;
+//         })();
+//         return instance;
+//     };
+//     Home();
+//     Home();
+//     Home();
+
+
+
 </script>
 <script defer>
     // Put code to load last here
@@ -181,7 +245,7 @@
 </script>
 <!-- <script type="module" src="../scripts/Modules.js"></script>
 <script type="module" src="hub.js"> -->
-</script>
+<!-- </script> -->
 <!-- <script type="module" src="../test2.js"></script> -->
 <!-- <script type="module">
     import {sayHi} from '../scripts/Modules.js';

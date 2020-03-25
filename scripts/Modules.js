@@ -1,14 +1,2 @@
-// import * as V from './Variables.js';
-// import * as F from './Functions.js';
-// import 'idempotent-babel-polyfill';
-// import { someVar } from './Variables.js';
-export * from './Variables.js';
 
-export const sayHi = _=> console.log('Modules');
-
-export const a = 'hoookay';
-
-export default {
-    sayHi,
-    a
-}
+// All modules imported here, whether internal files or external libraries, will be accessible accross your application as they appear in this file. Modules can also be imported at the top of the script area in text files.

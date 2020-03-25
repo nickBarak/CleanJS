@@ -39,29 +39,44 @@ const extract = (filename, targetdir, encoding='utf8') => locate(filename, targe
         : console.log(`No corresponding ${filename} file found for ${'<'+filename.split('.')[0]+'/>'} element.`);
 
 const bootstrapHTML = (sourcefile, targetdir, encoding='utf8') => {
-    let src = polish(fs.readFileSync(sourcefile, encoding)),
-        getMatches = content => {
-            return content
-                ? content.match(/<[A-Z].*>/) != null
-                    ? content.match(/<[A-Z].*>/g).map(match => match.split('>')[0] + '>')
-                    : null
-                : null
-        },
+    let initializers = [],
+        src = polish(fs.readFileSync(sourcefile, encoding)),
+        getMatches = content => content.match(/<[A-Z].*>/) != null
+                    ? content.match(/<([A-Z]\w*).*><\/\1>/g)
+                    : null,
         innerBootstrapHTML = match => {
-        let newContent = extract(/[A-Z]\w*/.exec(match)+'.html', targetdir, encoding);
-            src = (((/(<[A-Z]\w* +id=.*) .*=/.exec(match) != null) && newContent != null) && match)
-                ? src.replace(match, `${/(<[A-Z]\w* +id=.*) .*=/.exec(match)[1].replace(/ +/g, ' ')}>${newContent.split(/[\r\n]+<script/)[0]}<\/${match.match(/[A-Z]\w*/)}>`)
-                : src;
-            if (getMatches(newContent) != null) getMatches(newContent).forEach(match => innerBootstrapHTML(match))
+        let tagname = /[A-Z]\w*/.exec(match),
+            newContent = polish(extract(tagname+'.html', targetdir, encoding).split(/[\r\n]+<script/)[0]);
+        if (/id\=/.exec(match)) {
+            let id = /(?:id ?= ?)(?:['" ]?)(.*?)(?:['"])(?:\w.*=)?/.exec(match),
+                init = /(?:init ?= ?)("|')(.*?)\1(?=( *>| \w.*=))/.exec(match),
+                traps = /(?:traps ?= ?)("|')(.*?)\1(?=( *>| \w.*=))/.exec(match);
+            initializers.push({id: id ? id[1] : id, init: init ? init[2] : init, traps: traps ? traps[2] : traps})
+            let trimmedMatch = match,
+                configs = initializers[initializers.length-1];
+            for (config in configs) {
+                if (config !== 'id') trimmedMatch = trimmedMatch.replace(config+'="'+configs[config]+'"', '').replace(config+"='"+configs[config]+"'", '')
+            }
+            src = src.replace(match, `${trimmedMatch.split('><')[0]}>${newContent}<${trimmedMatch.split('><')[1]}`)
+            if (getMatches(newContent)) getMatches(newContent).forEach(match => innerBootstrapHTML(match))
+        } else throw new Error(`Missing 'id' attribute for <${tagname}/> in ${locate(tagname+'.html', targetdir, encoding)}`)
+        if (getMatches(newContent) != null) getMatches(newContent).forEach(match => innerBootstrapHTML(match))
     };
     if (getMatches(src)) getMatches(src).forEach(match => innerBootstrapHTML(match))
-    return src
+    return polish(src)
 };
 
 const compile = (dirname, targetlocalpath, destination, encoding='utf8') => {
     let fullpath = path.join(dirname, targetlocalpath)
-        imports = [],
-        scripts = [];
+        imports = ["import { Private, family, list, ul, ol, select, elt, on, toggle, html, sift, show, hide, kill, revive, transition, active, shown, live, ajax, ajaxGet, table, meld, freeze, thaw } from './Clean.js'"],
+        scripts = [`const partCounts = {\r\n}`, `const newInstance = part => {\r\n
+            const partName = \`\${part}\${partCounts[part] ? ' '+partCounts[part] : ''}\`;\r\n
+            partCounts[part]++;\r\n
+            let newElt = document.createElement(part);\r\n
+            newElt.setAttribute('part', partName);\r\n
+            return newElt;\r\n
+        };`],
+        texts = [];
     walk(fullpath, 'html', encoding)
         .forEach(file => {
             let filename = /(?<=\/?\\?)(\w*)\./.exec(file)[1],
@@ -72,28 +87,40 @@ const compile = (dirname, targetlocalpath, destination, encoding='utf8') => {
             if (content.match(/<script/)) {
                 [polish(content)
                     .match(/<script.*>[\s\S]*<\/script>/)[0]
-                    .replace(/<script.*>/, '@#$%')
-                    .replace(/<\/script>/, '};')
-                    .replace(/\r\n/, '')
-                    .replace(/[\r\n]*\}\)\(\);$/, '\r};')]
+                    .replace(/<\/script>/, '')
+                    .replace(/\r\n/, '')]
                     .filter(script => typeof(script) !== 'undefined' && script.match(/\w/))
                     .forEach(script => {
                         if (script.match(/import.*/)) {
                             script
                                 .match(/import.*/g)
                                 .forEach(item => imports.push(item));
-                            scripts
-                                .push(`const ${filename} = ${params ? `(${params}) ` : '_'}=> {\n${script
-                                    .split(imports[imports.length-1])[1]
-                                    .replace(/.*\r\n/, '')}`);
-                        } else scripts.push(`const ${filename} = (${params}) => {\n${script.split('@#$%')[1]}`);
+                            script.replace(/import.*/g, '');
+                        }
+                        scripts.push(`const ${filename} = (place, init={}, traps={}) => {\r\n
+                            const instance = (_=> {\r\n
+                                const part = newInstance('${filename}');\r\n
+                                part.innerHTML = ${filename.toLowerCase()}Content(init);\r\n
+                                const script = _=> {\r\n
+                                    ${script.split(/<script.*>/)[1]}\r\n
+                                },\r\n
+                                store = new Store(part.getAttribute('part'), script, init, traps);\r\n
+                                place.appendChild(part);\r\n
+                                script();\r\n
+                                return part;\r\n
+                            })();\r\n
+                            return instance;\r\n
+                        };`);
                     });
-            }
-        })
+            };
+            texts.push(`const ${filename.toLowerCase()}Content = data => \`${bootstrapHTML(locate(filename+'.html', fullpath), fullpath).split('\r\n\r\n<script')[0]}\`;`);
+            scripts[0] = scripts[0].split('{\r\n')[0]+`{\r\n${filename}: 0${scripts[0].split('{\r\n')[1] === '}' ? '\r\n' : ',\r\n'}`+scripts[0].split('{\r\n')[1];
+        });
     imports = imports.join('\n');
+    texts = texts.join('\n\n');
     scripts = scripts.join('\n\n');
     fs.writeFileSync(path.join(dirname, 'index.html'), bootstrapHTML(path.join(dirname, 'model.html'), fullpath), 'utf8');
-    fs.writeFileSync(destination, [imports, scripts].join('\n\n'), {encoding});
+    fs.writeFileSync(destination, [imports, texts, scripts, `Home(document.body, {footerValue: 'footer'});\r\nFooter(document.body);`].join('\n\n'), {encoding});
 };
 
 const polish = (code, encoding='utf8') => {
@@ -104,8 +131,9 @@ const polish = (code, encoding='utf8') => {
         .replace(/(?<=<!--)[\s\S]*?(?=-->)/g, '')
         .replace(/<!---->/g, '')
         .replace(/\/\*[\s\S]*\*\//g, '')
-        .replace(/ *?\/\/.*\r\n/g, '')
-        .replace(/[\r\n]+/g, '\r\n');
+        // .replace(/ *?\/\/.*\r\n/g, '')
+        // .replace(/ +/g, ' ')
+        // .replace(/[\r\n]+(?<=\r\n\r\n)/g, '\r\n\r\n');
     if (code.match(/\.(js|ts|html)$/)) fs.writeFileSync(code, cleanCode, encoding);
     return cleanCode;
 };

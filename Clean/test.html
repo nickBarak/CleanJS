@@ -8,14 +8,15 @@
     <script type="module" defer src="./hub.js"></script>
     <script defer src="filesys.js"></script> -->
     <script type="module" src="./app.js"></script>
+    <script type="module" src="../test.js"></script>
     <link rel="stylesheet" href="../styles/style.sass">
     <title>Clean App</title>
 </head>
 <body>
 
-    <Header id=Header init="{asd: 'asdfsadf'}" traps="asdf" data="{. sdfl}"><a href="">asdf</a></Header>
+    <Header id=Header init="{asd: 'asdfsadf'}" traps="asdf" data="{. sdfl}"><a href="">asdfasdfsadfsd</a></Header>
     <Home id='Home, mate'></Home>
-    <ChangeStateButton id=""></ChangeStateButton>
+    <ChangeStateButton id="" part="Part 2"><p>Hello world</p></ChangeStateButton>
     <MyList id="MyList" init="" traps="" link="" data="[fluffy, charles], 23, 'Jimmy Neutron'"></MyList>
         <BinManager id="" init="{[fluffy, charles], 23, 'Jimmy Neutron'[fluffy, charles], 23, 'Jimmy Neutron'[fluffy, charles], 23, 'Jimmy Neutron'}," traps="" data=""></BinManager>
         <Bin id="Bin_23" data=""></Bin>
@@ -25,7 +26,11 @@
 
 </body>
 <script>
-    console.log(document.getElementById('Home, mate'))
+    // let hed = document.querySelector('Header')
+    // console.log(hed)
+    // hed = `<Header>whodunit</Header`;
+    //     console.log(hed)
+    // console.log(document.getElementById('Home, mate'))
     // Put code to load first here
     class Store {
         constructor (concern, init={}, traps={}, push=null) {

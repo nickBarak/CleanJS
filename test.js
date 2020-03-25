@@ -171,6 +171,64 @@
 // console.log(obj.value);
 
 
-export const sayHi = _=> console.log('Hello from test.js');
+// export const sayHi = _=> console.log('Hello from test.js');
 
-export default { sayHi };
+// export default { sayHi };
+
+
+// app.js
+import Clean, { elt } from './Clean/Clean.js';
+// import { link } from 'fs';
+
+// const now = new Store('app');
+
+// const partContent = `...`;
+
+// const Part = (init, traps) => {
+//     let part = document.createElement('Part'),
+//     concern = `Part${document.querySelectorAll('Part').length ? ' '+document.querySelectorAll('part').length+1 : ''}`,
+//     store = new Store(concern, init, traps);
+//     part.innerHTML = bootstrap(partContent, init);
+//     // scripts
+    
+//     // MAKE CLOSURE 
+    
+//     return part;
+// };
+
+// const render = initializers => {
+//     let fragment = new DocumentFragment();
+//     document.replaceChild(Part(init, traps), document.querySelector('[part=Part 2]'));
+    //     initializers.forEach(initializer => fragment.appendChild(initializer()));
+    //     const compareDOMs = (fragmentNodes, DOMNodes) => {
+        //         fragmentNodes.reduce((acc, cur, i) => {
+            //             if (!cur.isEqualNode(acc[i])) {
+                //                 compareDOMs(cur.childNodes, acc[i].childNodes) 
+                //             }
+                //         }, DOMNodes)
+                //     };
+                //     compareDOMs(fragment.querySelectorAll('*'), document.querySelectorAll('*'))
+            // }
+
+
+const render = initializers => {
+    let fragment = new DocumentFragment(),
+        part = document.querySelector('[part="Part 2"]'),
+        newPart = part.cloneNode('deep');
+    newPart.childNodes[0].textContent = 'no no no';
+    fragment.appendChild(newPart);
+    part.replaceWith(fragment);
+
+
+    // document.replaceChild(Part(init, traps), document.querySelector('[part=Part 2]'));
+    // initializers.forEach(initializer => fragment.appendChild(initializer()));
+    // const compareDOMs = (fragmentNodes, DOMNodes) => {
+    //     fragmentNodes.reduce((acc, cur, i) => {
+    //         if (!cur.isEqualNode(acc[i])) {
+    //             compareDOMs(cur.childNodes, acc[i].childNodes) 
+    //         }
+    //     }, DOMNodes)
+    // };
+    // compareDOMs(fragment.querySelectorAll('*'), document.querySelectorAll('*'))
+};
+render();

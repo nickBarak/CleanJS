@@ -1,5 +1,16 @@
 // // // // // CLIENT SIDE // // // // //
 
+export const render = (_=> {
+    const Fragment = new DocumentFragment();
+    return _=> { 
+        Fragment.appendChild(document.querySelector(`Home`).cloneNode());
+        for (let diff in this._diffs) {
+            if (diff in this.links) {
+                this.links[diff].forEach(link => Fragment.querySelector(link[0])[link[1]] = this._diffs[diff])
+            }
+        }
+    }
+})();
 
 
 
@@ -31,6 +42,7 @@ export class Part {
 //         this._diff = {};
 //         this._init = init;
 //         this.state = {};
+        // this.links = {};
 
 //         if (Object.entries(init).length) {
 //             for (let entry in init) { this.state[entry] = init[entry] }
@@ -39,24 +51,25 @@ export class Part {
 //         const handler = {
 //             get: (target, property, self) => {
 //                 if (property === 'check') Reflect.get(target, property, self)
-//                 if (['_concern', '_diff', '_init', 'state', 'legacy', '_dynasty'].includes(property)) console.log(target[property]);
-//                 if (property === 'target') console.log(target);
+//                 if (['CHECK _concern', 'CHECK _diff', 'CHECK _init', 'CHECK state', 'CHECK legacy', 'CHECK _dynasty', 'CHECK links'].includes(property)) console.log(target[property.split('CHECK ')[1]]);
+//  if (property === 'CHECK target') console.log(target);
 //                 if (property in this._diff) { delete this._diff[property] }
-//                 return ['_concern', '_diff', '_init', 'state', '__clear__', 'check'].includes(property) ? target[property] : Reflect.get(target.state, property, self)
+//                 return ['_concern', '_diff', '_init', 'state', '__clear__', 'check', 'link', 'links', 'toggle'].includes(property) ? target[property] : Reflect.get(target.state, property, self)
 //             },
-//             set: (target, property, value, self) => {
-//                 if ('concern,diff,init,state'.match(property.replace(/_/g, '').toLowerCase())) {
-//                     throw new Error('State items may not resemble top-level properties')
-//                 } else {
-//                     if (property === '_dynasty') { target._dynasty[/*document.querySelector('part').getAttribute('parent')*/'app'][value] = {}; true }
-//                     if (property === 'legacy') { this.legacy[value] = {}; true }
-//                     if (property === 'legacyExtension') { this.legacy[value[0]] = value[1]; true }
-//                     if (property === 'onClear') { now.legacyExtension = [this._concern, value]; true
-//                     } else this._diff[property] = this.state[property] = value; return true;
-//                 }
-//                 return true;
-//             }
-//         };
+        //     set: (target, property, value, self) => {
+        //         if ('concern,diff,init,state'.match(property.replace(/_/g, '').toLowerCase())) {
+        //             throw new Error('State items may not resemble top-level properties')
+        //         } else {
+        //             if (property === '_dynasty') { target._dynasty[/*document.querySelector('part').getAttribute('parent')*/'app'][value] = {}; true }
+        //             if (property === 'legacy') { this.legacy[value] = {}; true }
+        //             if (property === 'legacyExtension') { this.legacy[value[0]] = value[1]; true }
+        //             if (property === 'onClear') { now.legacyExtension = [this._concern, value]; true
+        //             } else this._diff[property] = this.state[property] = value; return true;
+        // if (this.links[property]) this.links[property].forEach(link => link[0][link[1]] = this.state[property]);
+        //         }
+        //         return true;
+        //     }
+        // };
 
 //         const handlerInsert = (trap, plus) => {
 //             let value = handler[trap];
@@ -86,7 +99,27 @@ export class Part {
 //         return new Proxy(this, handler)
 //     };
 
-//     check(what) { what ? this[what] : this.target };
+// check(what) { what ? this[`CHECK ${what}`] : this[`CHECK ${target}`] };
+
+// link(state, ...observers) { 
+//    if (!this.links[state]) this.links[state] = [];
+//    observers.forEach(observer => this.links[state].push(observer))
+// };
+
+// toggle(etarget, state, state1, state2, event='click') { document.querySelector(etarget).addEventListener(event, _=> this[state] = (this[state] === state1) ? state2 : state1) };
+
+// render() {
+//     this._fragment.appendChild(document.querySelector(`[part=${this._concern}]`).cloneNode('deep'));
+//     for (let diff in this._diff) {
+//         if (diff in this.links) {
+//             this.links[diff].forEach(link => this._fragment.querySelector(link[0])[link[1]] = this._diff[diff]);
+//         }
+//     }
+//     document.querySelector(`[part=${this._concern}]`).replaceWith(this._fragment);
+//     now.toggle('#title', 'titleText', 'Enjoy your stay', 'Welcome to CleanJS');
+//     // run();
+//     return true;
+// };
 
 //     __clear__() {
 //         for (let property in this.state) { delete this.state[property] }
@@ -196,6 +229,8 @@ export const on = (event, elt, cb, preventDefault=true) => elt.addEventListener(
     if (preventDefault) evt.preventDefault();
     cb();
 })
+
+export const toggle = (target, state, state1, state2, event='click') => on(event, target, _=> state = (state === state1) ? state2 : state1);
 
 export const html = (el, inner) => elt(el).innerHTML = inner;
 
@@ -314,7 +349,7 @@ export const table = (data) => {
     }
 }
 
-export const combine = (...objs) => {
+export const meld = (...objs) => {
     const combination = {};
     for (let obj in objs) {
         for (let key in obj) {
@@ -368,6 +403,7 @@ export default {
     select,
     elt,
     on,
+    toggle,
     html,
     sift,
     show,
@@ -381,7 +417,7 @@ export default {
     ajax,
     ajaxGet,
     table,
-    combine,
+    meld,
     freeze,
     thaw
 };
