@@ -4,7 +4,8 @@
   "description": "Initial Development",
   "main": "Clean.js",
   "scripts": {
-    "start": "node Clean/compile.js && parcel Clean/index.html"
+    "start": "node Clean/compile.js && parcel Clean/index.html",
+    "push": "git add . && git commit -m 'minor adjustments' && git push"
   },
   "author": "Nick Barak",
   "license": "ISC",

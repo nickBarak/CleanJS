@@ -147,3 +147,5 @@ let ary = ['asd{\r\nlfkjsaldfj'];
 ary[0] = ary[0].split('{\r\n')[0]+`{\r\nHome: 0,\r\n`+ary[0].split('{\r\n')[1];
 
 console.log(ary)
+
+let someRx = /( |<(?=\/.*?>))(?<=\${data\.[^\s]*?[^<]*?)/

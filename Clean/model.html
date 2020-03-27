@@ -14,17 +14,9 @@
 </head>
 <body>
 
-    <!-- <Header id=Header init="{asd: 'asdfsadf'}" traps="asdf" ></Header>
-    <!-- <Home id='Home, mate'></Home> -->
-    <!-- <ChangeStateButton id="btn_-2234"></ChangeStateButton> -->
-    <!-- <MyList id="MyList" init="" traps="" link=""></MyList>
-        <BinManager id="" init="{[fluffy, charles], 23, 'Jimmy Neutron'[fluffy, charles], 23, 'Jimmy Neutron'[fluffy, charles], 23, 'Jimmy Neutron'}," traps=""></BinManager>
-        <!--<Bin id="Bin_
-            ssdf
-        23"></Bin> -->
-        <!-- <Movie id="Movie_5"></Movie> -->
-    <!-- </MyList> -->
-    <!-- <Footer id=""></Footer> -->
+    <Header></Header>
+    <Home data="{title: `pgood mate`, greeting: 'Go away'}"></Home>
+    <Footer id="footer" class="someclass and-Other" randomattr =randO023mnn traps= '{onetrap: _=> console.log("henlo")}' data="{randomKey: 'randomVal', footerValue: 'SHA-BOO-YA'}"></Footer>
 
 </body>
 <script>
@@ -58,7 +50,7 @@
                     if (['CHECK _concern', 'CHECK _diff', 'CHECK _init', 'CHECK state', 'CHECK legacy', 'CHECK _dynasty', 'CHECK links'].includes(property)) console.log(target[property]);
                     if (property === 'CHECK target') console.log(target);
                     if (property in this._diff) { delete this._diff[property] }
-                    return ['_concern', '_diff', '_init', 'state', '__clear__', 'check', 'toggle', 'link', 'links', '_fragment'].includes(property) ? target[property] : Reflect.get(target.state, property, self)
+                    return ['_concern', '_diff', '_init', 'state', '__clear__', 'check', 'toggle', 'link', 'links', '_fragment', 'render'].includes(property) ? target[property] : Reflect.get(target.state, property, self)
                 },
                 set: (target, property, value, self) => {
                     if ('concern,diff,init,state'.match(property.replace(/_/g, '').toLowerCase())) {
@@ -162,7 +154,7 @@
 //             newElt.innerHTML = homeContent(init)`<div><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320"><path fill="#ddd" fill-opacity="1" d="M0,160L48,138.7C96,117,192,75,288,58.7C384,43,480,53,576,85.3C672,117,768,171,864,197.3C960,224,1056,224,1152,192C1248,160,1344,96,1392,64L1440,32L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path></svg></div>
 // <h1 id="title">Welcome to CleanJS</h1>
 // <ChangeStateButton id="homeStateBtn"><button id="changeStateBtn"></button>
-// <Footer id="newHome"><div id="footerDiv">and your <strong>footer</strong> last</div></Footer></ChangeStateButton>
+
 // <div id="lowerSvg"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 319"><path fill="#7a7aa3" fill-opacity="1" d="M0,160L48,138.7C96,117,192,75,288,58.7C384,43,480,53,576,85.3C672,117,768,171,864,197.3C960,224,1056,224,1152,192C1248,160,1344,96,1392,64L1440,32L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path></svg></div>`;
 //             document.body.appendChild(newElt);
 //             // console.log(document.querySelector(`[part='${partName}']`))            

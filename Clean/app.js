@@ -1,19 +1,17 @@
 import { Private, family, list, ul, ol, select, elt, on, toggle, html, sift, show, hide, kill, revive, transition, active, shown, live, ajax, ajaxGet, table, meld, freeze, thaw } from './Clean.js'
-import * as nothing from './Clean.js';
-import {sayHi, a} from '../scripts/Modules.js';
+
 
 const homeContent = data => `<div><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320"><path fill="#ddd" fill-opacity="1" d="M0,160L48,138.7C96,117,192,75,288,58.7C384,43,480,53,576,85.3C672,117,768,171,864,197.3C960,224,1056,224,1152,192C1248,160,1344,96,1392,64L1440,32L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path></svg></div>
-<h1 id="title">Welcome to CleanJS</h1>
-<ChangeStateButton id="homeStateBtn"><button id="changeStateBtn"></button>
-<Footer id="newHome"><div id="footerDiv">and your <strong>${data.footerValue}</strong> last</div></Footer></ChangeStateButton>
+<h1 id="title">${data.greeting} to ${data.title}</h1>
+${ChangeStateButton(null).outerHTML}
 <div id="lowerSvg"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 319"><path fill="#7a7aa3" fill-opacity="1" d="M0,160L48,138.7C96,117,192,75,288,58.7C384,43,480,53,576,85.3C672,117,768,171,864,197.3C960,224,1056,224,1152,192C1248,160,1344,96,1392,64L1440,32L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path></svg></div>`;
 
-const changestatebuttonContent = data => `<button id="changeStateBtn"></button>
-<Footer id="newHome"><div id="footerDiv">and your <strong>${data.footerValue}</strong> last</div></Footer>`;
+const changeStateButtonContent = data => `<button id="changeStateBtn"></button>
+${Footer(null).outerHTML}
+`;
 
 const footerContent = data => `<div id="footerDiv">and your <strong>${data.footerValue}</strong> last</div>`;
 
-const headerContent = data => ``;
 
 const partCounts = {
 Header: 0,
@@ -36,34 +34,29 @@ const newInstance = part => {
 
         };
 
-const Home = (place, init={}, traps={}) => {
+const Home = (place, data={}, traps={}) => {
 
                             const instance = (_=> {
 
-                                const part = newInstance('Home');
-
-                                part.innerHTML = homeContent(init);
-
                                 const script = _=> {
 
-                                        // import * as nothing from './Clean.js';
-    // import {sayHi, a} from '../scripts/Modules.js';
-    // console.log('hi')
-    // console.log('test', a)
-    // sayHi()
+                                        store.link('titleText', ['#title', 'textContent']);
     store.toggle('#title', 'titleText', 'Enjoy your stay', 'Welcome to CleanJS');
-    store.link('titleText', ['#title', 'textContent']);
-    const homeStore = new Store('home');
-    var u0= 'sojdk,';
-    console.log(now);
 
 
                                 },
 
-                                store = new Store(part.getAttribute('part'), script, init, traps);
+                                    stateInit = meld(true, { title: 'CleanJS', greeting: 'Welcome' }, data),
 
-                                place.appendChild(part);
+                                    trapsInit = meld(true, {}, traps),
 
+                                    part = newInstance('Home'),
+
+                                    store = new Store(part.getAttribute('part'), script, stateInit, trapsInit);
+
+                                part.innerHTML = homeContent(stateInit);
+
+                                if (place) place.appendChild(part);
                                 script();
 
                                 return part;
@@ -74,13 +67,9 @@ const Home = (place, init={}, traps={}) => {
 
                         };
 
-const ChangeStateButton = (place, init={}, traps={}) => {
+const ChangeStateButton = (place, data={}, traps={}) => {
 
                             const instance = (_=> {
-
-                                const part = newInstance('ChangeStateButton');
-
-                                part.innerHTML = changestatebuttonContent(init);
 
                                 const script = _=> {
 
@@ -99,17 +88,24 @@ const ChangeStateButton = (place, init={}, traps={}) => {
     // now.check('target')
 
 
-    let btn = elt('#changeStateButton');
-    store.toggle(btn, 'text', 'State 1', 'State 2');
-    store.link('text', [btn, 'textContent']);
+    // let btn = elt('#changeStateButton');
+    // store.toggle(btn, 'text', 'State 1', 'State 2');
+    // store.link('text', [btn, 'textContent']);
 
 
                                 },
 
-                                store = new Store(part.getAttribute('part'), script, init, traps);
+                                    stateInit = meld(true, {}, data),
 
-                                place.appendChild(part);
+                                    trapsInit = meld(true, {}, traps),
 
+                                    part = newInstance('ChangeStateButton'),
+
+                                    store = new Store(part.getAttribute('part'), script, stateInit, trapsInit);
+
+                                part.innerHTML = changeStateButtonContent(stateInit);
+
+                                if (place) place.appendChild(part);
                                 script();
 
                                 return part;
@@ -120,13 +116,9 @@ const ChangeStateButton = (place, init={}, traps={}) => {
 
                         };
 
-const Footer = (place, init={}, traps={}) => {
+const Footer = (place, data={}, traps={}) => {
 
                             const instance = (_=> {
-
-                                const part = newInstance('Footer');
-
-                                part.innerHTML = footerContent(init);
 
                                 const script = _=> {
 
@@ -136,10 +128,21 @@ const Footer = (place, init={}, traps={}) => {
 
                                 },
 
-                                store = new Store(part.getAttribute('part'), script, init, traps);
+                                    stateInit = meld(true, {
+        footerValue: 'WORKING'
+    }, data),
 
-                                place.appendChild(part);
+                                    trapsInit = meld(true, {
 
+    }, traps),
+
+                                    part = newInstance('Footer'),
+
+                                    store = new Store(part.getAttribute('part'), script, stateInit, trapsInit);
+
+                                part.innerHTML = footerContent(stateInit);
+
+                                if (place) place.appendChild(part);
                                 script();
 
                                 return part;
@@ -150,5 +153,6 @@ const Footer = (place, init={}, traps={}) => {
 
                         };
 
-Home(document.body, {footerValue: 'footer'});
-Footer(document.body);
+
+Home(document.body, {title: `pgood mate`, greeting: 'Go away'});
+Footer(document.body, {randomKey: 'randomVal', footerValue: 'SHA-BOO-YA'}, {onetrap: _=> console.log("henlo")});

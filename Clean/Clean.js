@@ -1,17 +1,5 @@
 // // // // // CLIENT SIDE // // // // //
 
-export const render = (_=> {
-    const Fragment = new DocumentFragment();
-    return _=> { 
-        Fragment.appendChild(document.querySelector(`Home`).cloneNode());
-        for (let diff in this._diffs) {
-            if (diff in this.links) {
-                this.links[diff].forEach(link => Fragment.querySelector(link[0])[link[1]] = this._diffs[diff])
-            }
-        }
-    }
-})();
-
 
 
 
@@ -28,7 +16,7 @@ export class Part {
 };
 
 // export class Store {
-//     constructor (concern, init={}, traps={}, push=null) {
+//     constructor (concern, script, init={}, traps={}, push=null) {
 //         // if (concern) {console.log(true)} else console.log(false);
 //         // if (!now) {console.log(true)} else console.log(false);
 //         if (now) now.legacy
@@ -43,6 +31,8 @@ export class Part {
 //         this._init = init;
 //         this.state = {};
         // this.links = {};
+        // this._script = script;
+        //     this._fragment = new DocumentFragment();
 
 //         if (Object.entries(init).length) {
 //             for (let entry in init) { this.state[entry] = init[entry] }
@@ -54,7 +44,7 @@ export class Part {
 //                 if (['CHECK _concern', 'CHECK _diff', 'CHECK _init', 'CHECK state', 'CHECK legacy', 'CHECK _dynasty', 'CHECK links'].includes(property)) console.log(target[property.split('CHECK ')[1]]);
 //  if (property === 'CHECK target') console.log(target);
 //                 if (property in this._diff) { delete this._diff[property] }
-//                 return ['_concern', '_diff', '_init', 'state', '__clear__', 'check', 'link', 'links', 'toggle'].includes(property) ? target[property] : Reflect.get(target.state, property, self)
+//                 return ['_concern', '_diff', '_init', 'state', '__clear__', 'check', 'link', 'links', 'toggle', 'render', '_fragment'].includes(property) ? target[property] : Reflect.get(target.state, property, self)
 //             },
         //     set: (target, property, value, self) => {
         //         if ('concern,diff,init,state'.match(property.replace(/_/g, '').toLowerCase())) {
@@ -99,27 +89,32 @@ export class Part {
 //         return new Proxy(this, handler)
 //     };
 
-// check(what) { what ? this[`CHECK ${what}`] : this[`CHECK ${target}`] };
+// check(what) { what ? this['CHECK '+what] : this['CHECK target'] };
 
-// link(state, ...observers) { 
-//    if (!this.links[state]) this.links[state] = [];
-//    observers.forEach(observer => this.links[state].push(observer))
-// };
+//         link(state, ...observers) { 
+//             if (!this.links[state]) this.links[state] = [];
+//             observers.forEach(observer => this.links[state].push([`[part='${this._concern}'] ${observer[0]}`, observer[1]]))
+//         };
 
-// toggle(etarget, state, state1, state2, event='click') { document.querySelector(etarget).addEventListener(event, _=> this[state] = (this[state] === state1) ? state2 : state1) };
+//         toggle(etarget, state, state1, state2, event='click') { 
+//             document.querySelector(`[part='${this._concern}'] ${etarget}`).addEventListener(event, _=> this[state] = (this[state] === state1) ? state2 : state1)
+//         };
 
-// render() {
-//     this._fragment.appendChild(document.querySelector(`[part=${this._concern}]`).cloneNode('deep'));
-//     for (let diff in this._diff) {
-//         if (diff in this.links) {
-//             this.links[diff].forEach(link => this._fragment.querySelector(link[0])[link[1]] = this._diff[diff]);
-//         }
-//     }
-//     document.querySelector(`[part=${this._concern}]`).replaceWith(this._fragment);
-//     now.toggle('#title', 'titleText', 'Enjoy your stay', 'Welcome to CleanJS');
-//     // run();
-//     return true;
-// };
+//         render() {
+//             if (this._concern !== 'app') {
+//                 let part = document.querySelector(`[part='${this._concern}']`),
+//                     clone = part.cloneNode('deep');
+//                 this._fragment.appendChild(clone);
+//                 for (let diff in this._diff) {
+//                     if (diff in this.links) {
+//                         this.links[diff].forEach(link => this._fragment.querySelector(link[0])[link[1]] = this._diff[diff]);
+//                     }
+//                 }
+//                 part.replaceWith(this._fragment);
+//                 this._script();
+//             }
+//             return true;
+//         };
 
 //     __clear__() {
 //         for (let property in this.state) { delete this.state[property] }
@@ -349,13 +344,13 @@ export const table = (data) => {
     }
 }
 
-export const meld = (...objs) => {
+export const meld = (overwrite, ...objs) => {
     const combination = {};
     for (let obj in objs) {
-        for (let key in obj) {
-            if (key in combination) {
+        for (let key in objs[obj]) {
+            if (!overwrite && key in combination) {
                 throw new Error(`Duplicate key: ${key}`);
-            } else combination[key] = obj[key];
+            } else combination[key] = objs[obj][key];
         }
     }
     return combination;
