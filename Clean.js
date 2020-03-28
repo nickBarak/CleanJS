@@ -38,77 +38,58 @@ const extract = (filename, targetdir, encoding='utf8') => locate(filename, targe
         ? fs.readFileSync(locate(filename, targetdir, encoding), encoding)
         : console.log(`No corresponding ${filename} file found for ${'<'+filename.split('.')[0]+'/>'} element.`);
 
-// const bootstrapHTML = (sourcefile, targetdir, encoding='utf8') => {
-//     let initializers = [],
-//         src = polish(fs.readFileSync(sourcefile, encoding)),
-//         getMatches = content => content.match(/<[A-Z].*>/) != null
-//                     ? content.match(/<([A-Z]\w*).*><\/\1>/g)
-//                     : null,
-//         innerBootstrapHTML = match => {
-//         let tagname = /[A-Z]\w*/.exec(match),
-//             newContent = polish(extract(tagname+'.html', targetdir, encoding).split(/[\r\n]+<script/)[0]);
-//         if (/id\=/.exec(match)) {
-//             let id = /(?:id ?= ?)(?:['" ]?)(.*?)(?:['"])(?:\w.*=)?/.exec(match),
-//                 init = /(?:init ?= ?)("|')(.*?)\1(?=( *>| \w.*=))/.exec(match),
-//                 traps = /(?:traps ?= ?)("|')(.*?)\1(?=( *>| \w.*=))/.exec(match);
-//             initializers.push({id: id ? id[1] : id, init: init ? init[2] : init, traps: traps ? traps[2] : traps})
-//             let trimmedMatch = match,
-//                 configs = initializers[initializers.length-1];
-//             for (config in configs) {
-//                 if (config !== 'id') trimmedMatch = trimmedMatch.replace(config+'="'+configs[config]+'"', '').replace(config+"='"+configs[config]+"'", '')
-//             }
-//             src = src.replace(match, `${trimmedMatch.split('><')[0]}>${newContent}<${trimmedMatch.split('><')[1]}`)
-//             if (getMatches(newContent)) getMatches(newContent).forEach(match => innerBootstrapHTML(match))
-//         } else throw new Error(`Missing 'id' attribute for <${tagname}/> in ${locate(tagname+'.html', targetdir, encoding)}`)
-//         if (getMatches(newContent) != null) getMatches(newContent).forEach(match => innerBootstrapHTML(match))
-//     };
-//     if (getMatches(src)) getMatches(src).forEach(match => innerBootstrapHTML(match))
-//     return polish(src)
-// };
-
-const bootstrapHTML2 = (sourcefile, targetdir, encoding='utf8') => {
+const bootstrapHTML = (sourcefile, targetdir, encoding='utf8') => {
     let initializers = [],
         src = polish(fs.readFileSync(sourcefile, encoding)),
         getMatches = content => content.match(/<[A-Z].*>/) != null
                     ? content.match(/<([A-Z]\w*).*><\/\1>/g)
                     : null,
         innerBootstrapHTML = match => {
-        let tagname = /[A-Z]\w*/.exec(match)[0];
-            let data = /(?:data ?= ?)("|')(.*?)\1(?=( *>| \w.*=))/.exec(match),
-                traps = /(?:traps ?= ?)("|')(.*?)\1(?=( *>| \w.*=))/.exec(match);
-            // initializers.push({part: part ? part[1] : part, data: data ? data[2] : '{}', traps: traps ? traps[2] : '{}'})
-            let initializer = `${tagname}(null${data ? ', '+data[2] : ''}${traps ? ', '+traps[2] : ''})`;
-            initializers.push(initializer);
-            src = src.replace(match, '\${'+initializer+'.outerHTML}');
+        let parent = /[A-Z]\w*/.exec(match),
+            newContent = polish(extract(parent+'.html', targetdir, encoding).split(/[\r\n]+<script/)[0]);
+            if (getMatches(newContent)) getMatches(newContent).forEach(newMatch => {
+                let data = /(?:data ?= ?)("|')(.*?)\1(?=( *>| \w.*=))/.exec(newMatch),
+                    traps = /(?:traps ?= ?)("|')(.*?)\1(?=( *>| \w.*=))/.exec(newMatch),
+                    initializer = `${/[A-Z]\w*/.exec(newMatch)}('${parent}'${data ? ', '+data[2] : ''}${traps ? ', '+traps[2] : ''})`;
+                initializers.push(initializer);
+                src = src.replace(newMatch, '\${'+initializer+'.outerHTML}');
+                innerBootstrapHTML(newMatch);
+            });
+            
             // let trimmedMatch = match,
             //     configs = initializers[initializers.length-1];
             // for (config in configs) {
             //     if (config !== 'id') trimmedMatch = trimmedMatch.replace(config+'="'+configs[config]+'"', '').replace(config+"='"+configs[config]+"'", '')
             // }
-            // src = src.replace(match, trimmedMatch)
-            // if (getMatches(newContent)) getMatches(newContent).forEach(match => innerBootstrapHTML(match))
-        // } else throw new Error(`Missing 'id' attribute for <${tagname}/> in ${locate(tagname+'.html', targetdir, encoding)}`)
     };
-    if (getMatches(src)) getMatches(src).forEach(match => innerBootstrapHTML(match))
+    if (getMatches(src)) getMatches(src).forEach(match => {
+        let data = /(?:data ?= ?)("|')(.*?)\1(?=( *>| \w.*=))/.exec(match),
+            traps = /(?:traps ?= ?)("|')(.*?)\1(?=( *>| \w.*=))/.exec(match),
+            initializer;
+        if (/([A-Z][\w\d]*?)\.htm/.exec(sourcefile)) {
+            initializer = `${/[A-Z]\w*/.exec(match)}('${/([A-Z][\w\d]*?)\.htm/.exec(sourcefile)[1]}'${data ? ', '+data[2] : ''}${traps ? ', '+traps[2] : ''})`;
+            innerBootstrapHTML(match);
+        } else {
+            initializer = `${/[A-Z]\w*/.exec(match)}('top'${data ? ', '+data[2] : ''}${traps ? ', '+traps[2] : ''})`;
+        }
+        initializers.push(initializer);
+        src = src.replace(match, '\${'+initializer+'.outerHTML}');
+    })
     return [polish(src), initializers]
 };
 
-// const attributes = element => {
-//     let tag = /<.*?>/.exec(element);
-//     tag.match(/[\w\d]* ?= ?/g).map(attr => {})
-
 const compile = (dirname, targetlocalpath, destination, encoding='utf8') => {
     let fullpath = path.join(dirname, targetlocalpath)
-        imports = ["import { Private, family, list, ul, ol, select, elt, on, toggle, html, sift, show, hide, kill, revive, transition, active, shown, live, ajax, ajaxGet, table, meld, freeze, thaw } from './Clean.js'"],
-        scripts = [`const partCounts = {\r\n}`, `const newInstance = part => {\r\n
+        imports = ["import { Store, Private, pId, family, list, ul, ol, select, elt, on, toggle, html, sift, show, hide, kill, revive, transition, ajax, ajaxGet, table, meld, hunt, edit, freeze, thaw } from './Clean.js'"],
+        scripts = ["const now = new Store('app');", `const partCounts = {\r\n}`, `const newInstance = part => {\r\n
             const partName = \`\${part}\${partCounts[part] ? ' '+partCounts[part] : ''}\`;\r\n
             partCounts[part]++;\r\n
             let newElt = document.createElement(part);\r\n
-            newElt.setAttribute('part', partName);\r\n
+            newElt.setAttribute('pId', partName);\r\n
             return newElt;\r\n
         };`],
         texts = [],
-        initialRender = bootstrapHTML2(path.join(dirname, 'model.html'), fullpath)[1].map(initializer => initializer.replace(/\((null)/, '(document.body')+';');
+        initialRender = bootstrapHTML(path.join(dirname, 'model.html'), fullpath)[1].map(initializer => initializer.replace(/\((null)/, '(document.body')+';');
     walk(fullpath, 'html', encoding)
         .forEach(file => {
             let filename = /(?<=\/?\\?)(\w*)\./.exec(file)[1],
@@ -127,7 +108,7 @@ const compile = (dirname, targetlocalpath, destination, encoding='utf8') => {
                                 .forEach(item => imports.push(item));
                             script.replace(/import.*/g, '');
                         }
-                        scripts.push(`const ${filename} = (place, data={}, traps={}) => {\r\n
+                        scripts.push(`const ${filename} = (place='top', data={}, traps={}) => {\r\n
                             const instance = (_=> {\r\n
                                 const script = _=> {\r\n
                                     ${script.split(/<script.*>/)[1]}\r\n
@@ -135,9 +116,16 @@ const compile = (dirname, targetlocalpath, destination, encoding='utf8') => {
                                     stateInit = meld(true, ${storeDefaults ? /state: ([\s\S]*?})/.exec(storeDefaults)[1] : '{}'}, data),\r\n
                                     trapsInit = meld(true, ${storeDefaults ? /traps: ([\s\S]*?})/.exec(storeDefaults)[1] : '{}'}, traps),\r\n
                                     part = newInstance('${filename}'),\r\n
-                                    store = new Store(part.getAttribute('part'), script, stateInit, trapsInit);\r\n
-                                part.innerHTML = ${filename[0].toLowerCase()+filename.slice(1)}Content(stateInit);\r\n
-                                if (place) place.appendChild(part);
+                                    store = new Store(part.getAttribute('pId'), now, place, script, stateInit, trapsInit),\r\n
+                                    fragment = new DocumentFragment();\r\n
+                                fragment.appendChild(part);
+                                fragment.querySelector(\`[pId='\${part.getAttribute("pId")}']\`).innerHTML = ${filename[0].toLowerCase()+filename.slice(1)}Content(stateInit);\r\n
+                                if (place) { place === 'top'\r\n
+                                    ? document.body.appendChild(part)\r\n
+                                    : pId(place)\r\n
+                                        ? pId(place).appendChild(part)\r\n
+                                        : {};\r\n
+                                };\r\n
                                 script();\r\n
                                 return part;\r\n
                             })();\r\n
@@ -145,15 +133,15 @@ const compile = (dirname, targetlocalpath, destination, encoding='utf8') => {
                         };`);
                     });
             };
-            texts.push(`const ${filename[0].toLowerCase()+filename.slice(1)}Content = data => \`${bootstrapHTML2(locate(filename+'.html', fullpath), fullpath)[0].split('\r\n\r\n<script')[0].replace(/( |>(?<=<.*?))(?=data\..*?(?: |<\/.*?>))/g, '$1\${').replace(/(\s|<)(?<=\${data\.[^\s<]*?(\s|<))/g, '}$1')}\`;`);
-            scripts[0] = scripts[0].split('{\r\n')[0]+`{\r\n${filename}: 0${scripts[0].split('{\r\n')[1] === '}' ? '\r\n' : ',\r\n'}`+scripts[0].split('{\r\n')[1];
+            texts.push(`const ${filename[0].toLowerCase()+filename.slice(1)}Content = data => \`${bootstrapHTML(locate(filename+'.html', fullpath), fullpath)[0].split('\r\n\r\n<script')[0].replace(/( |>(?<=<.*?))(?=data\..*?(?: |<\/.*?>))/g, '$1\${').replace(/(\s|<)(?<=\${data\.[^\s<]*?(\s|<))/g, '}$1')}\`;`);
+            scripts[1] = scripts[1].split('{\r\n')[0]+`{\r\n${filename}: 0${scripts[1].split('{\r\n')[1] === '}' ? '\r\n' : ',\r\n'}`+scripts[1].split('{\r\n')[1];
         });
     let usedParts = scripts.map(script => /const ([\w\d]*)/.exec(script)[1]);
     imports = imports.join('\n');
     initialRender = initialRender.filter(part => usedParts.includes(part.split('(')[0])).join('\n');
     texts = texts.filter(text => text.split('=> ')[1].length>3).join('\n\n');
     scripts = scripts.join('\n\n');
-    // fs.writeFileSync(path.join(dirname, 'index.html'), bootstrapHTML2(path.join(dirname, 'model.html'), fullpath), 'utf8');
+    // fs.writeFileSync(path.join(dirname, 'index.html'), bootstrapHTML(path.join(dirname, 'model.html'), fullpath), 'utf8');
     fs.writeFileSync(destination, [imports, texts, scripts, initialRender].join('\n\n\n'), {encoding});
 };
 
@@ -201,7 +189,7 @@ module.exports = {
     walk,
     locate,
     extract,
-    bootstrapHTML2,
+    bootstrapHTML,
     compile,
     polish,
     allow,

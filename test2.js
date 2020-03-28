@@ -142,10 +142,23 @@ const path = require('path');
 
 // newElt.innerHTML = /* `<part part="Part 1">bootstrapped ${shtuff}`</part> */;
 
-let ary = ['asd{\r\nlfkjsaldfj'];
+// let ary = ['asd{\r\nlfkjsaldfj'];
 
-ary[0] = ary[0].split('{\r\n')[0]+`{\r\nHome: 0,\r\n`+ary[0].split('{\r\n')[1];
+// ary[0] = ary[0].split('{\r\n')[0]+`{\r\nHome: 0,\r\n`+ary[0].split('{\r\n')[1];
 
-console.log(ary)
+// console.log(ary)
 
-let someRx = /( |<(?=\/.*?>))(?<=\${data\.[^\s]*?[^<]*?)/
+// let someRx = /( |<(?=\/.*?>))(?<=\${data\.[^\s]*?[^<]*?)/
+
+// const obj = {a: {b: {c: 'd'}}};
+// const h = {};
+// console.log(obj);
+// obj['a'][h];
+// console.log(obj);
+
+// if (typeof(obj) === 'undefined') console.log('ohoij')
+let sourcefile = "c:\Users\nicho\Code\CleanJS\texts\Home.html";
+
+let amatch = /([A-Z][\w\d]*?)\.htm/.exec(sourcefile)[1];
+
+console.log(amatch)

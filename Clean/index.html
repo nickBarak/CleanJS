@@ -4,7 +4,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    
     <script type="module" src="./app.js"></script>
     <link rel="stylesheet" href="../styles/style.sass">
     <title>Clean App</title>
@@ -14,123 +13,131 @@
 </body>
 <script>
     // Put code to load first here
-    class Store {
-        constructor (concern, script, init={}, traps={}, push=null) {
-            // if (concern) {console.log(true)} else console.log(false);
-            // if (!now) {console.log(true)} else console.log(false);
-            // if (now) now.legacy
-            // if (now && !Object.keys(now.legacy).includes(concern)) {console.log(true)} else console.log(false);
-            this._concern = concern;
-            // } else throw new Error('Stores must be initialized with a concern');
-            if (concern === 'app') {
-                this.legacy = {test: ''};
-                this._dynasty = { app: {} }
-            } else now.legacy = now._dynasty = concern;
-            this._diff = {};
-            this._init = init;
-            this.state = {};
-            this.links = {};
-            this._script = script;
-            this._fragment = new DocumentFragment();
+    // class Store {
+    //     constructor (concern, script, init={}, traps={}, push=null) {
+    //         // if (concern) {console.log(true)} else console.log(false);
+    //         // if (!now) {console.log(true)} else console.log(false);
+    //         // if (now) now.legacy
+    //         // if (now && !Object.keys(now.legacy).includes(concern)) {console.log(true)} else console.log(false);
+    //         this._concern = concern;
+    //         if (now) now._activeParts = ['add', concern];
+    //         // } else throw new Error('Stores must be initialized with a concern');
+    //         if (concern === 'app') {
+    //             this.legacy = {test: ''};
+    //             this._dynasty = { app: {} };
+    //             this._activeParts = [];
+    //         } else now.legacy = now._dynasty = concern;
+    //         this._diff = {};
+    //         this._init = init;
+    //         this.state = {};
+    //         this.links = {};
+    //         this._script = script;
+    //         this._fragment = new DocumentFragment();
 
-            if (Object.entries(init).length) {
-                for (let entry in init) { this.state[entry] = init[entry] }
-            };
+    //         if (Object.entries(init).length) {
+    //             for (let entry in init) { this.state[entry] = init[entry] }
+    //         };
 
-            const handler = {
-                get: (target, property, self) => {
-                    if (property === 'check') Reflect.get(target, property, self)
-                    if (['CHECK _concern', 'CHECK _diff', 'CHECK _init', 'CHECK state', 'CHECK legacy', 'CHECK _dynasty', 'CHECK links'].includes(property)) console.log(target[property]);
-                    if (property === 'CHECK target') console.log(target);
-                    if (property in this._diff) { delete this._diff[property] }
-                    return ['_concern', '_diff', '_init', 'state', '__clear__', 'check', 'toggle', 'link', 'links', '_fragment', 'render'].includes(property) ? target[property] : Reflect.get(target.state, property, self)
-                },
-                set: (target, property, value, self) => {
-                    if ('concern,diff,init,state'.match(property.replace(/_/g, '').toLowerCase())) {
-                        console.log('State items may not resemble top-level properties')
-                    } else {
-                        if (property === '_dynasty') { target._dynasty['app'][value] = {}; true }
-                        if (property === 'legacy') { this.legacy[value] = {}; true }
-                        if (property === 'legacyExtension') { this.legacy[value[0]] = value[1]; true }
-                        if (property === 'onClear') { now.legacyExtension = [this._concern, value]; true
-                        } else this._diff[property] = this.state[property] = value;
-                        this.render();
-                    }
-                    return true;
-                }
-            };
+    //         const handler = {
+    //             get: (target, property, self) => {
+    //                 if (property === 'check target') console.log(target);
+    //                 if (property in this._diff) { delete this._diff[property] }
+    //                 return ['_concern', '_diff', '_init', 'state', '__clear__', 'toggle', 'link', 'links', '_fragment', 'render', 'check', '_activeParts'].includes(property) ? target[property] : Reflect.get(target.state, property, self)
+    //             },
+    //             set: (target, property, value, self) => {
+    //                 if ('concern,diff,init,state'.match(property.replace(/_/g, '').toLowerCase())) {
+    //                     console.log('State items may not resemble top-level properties')
+    //                 } else {
+    //                     // if (property === '_dynasty') { target._dynasty['app'][value] = {}; true }
+    //                     if (property === 'legacy') { this.legacy[value] = {}; true }
+    //                     if (property === 'legacyExtension') { this.legacy[value[0]] = value[1]; true }
+    //                     if (property === 'onClear') { now.legacyExtension = [this._concern, value]; }if (property === '_activeParts') {
+    //                         if (this._concern === 'app') {
+    //                             if (value[0] === 'add') {
+    //                                 this._activeParts.push(value[1]);
+    //                                 edit(value[2], this._dynasty, value[1], {});
+    //                             } else {
+    //                                 this._activeParts = this._activeParts.filter(part => part !== value[1]);
+    //                                 hunt(value[1], this._dynasty);
+    //                             }
+    //                         }
+    //                     } else this._diff[property] = this.state[property] = value;
+    //                     this.render();
+    //                 }
+    //                 return true;
+    //             }
+    //         };
 
-            const handlerInsert = (trap, plus) => {
-                let value = handler[trap];
-                value = `${value}`.split('return');
-                value.splice(1, 0, 'return');
-                value.splice(1, 0, plus);
-                value.unshift('(');
-                value.push(')');
-                handler[trap] = eval(value.join(''));
-            }
+    //         const handlerInsert = (trap, plus) => {
+    //             let value = handler[trap];
+    //             value = `${value}`.split('return');
+    //             value.splice(1, 0, 'return');
+    //             value.splice(1, 0, plus);
+    //             value.unshift('(');
+    //             value.push(')');
+    //             handler[trap] = eval(value.join(''));
+    //         }
             
-            if (Object.entries(traps).length) {
-                for (let trap in traps) { 
-                    if (trap === 'set' || trap === 'get') {
-                        handlerInsert(trap, `${traps[trap]}`);
-                    } else handler[trap] = eval(traps[trap]);
-                }
-                if (push) {
-                    for (trap in handler) {
-                        handlerInsert(trap, `\nif (this._diff.length) {
-                            for (let property in this._diff) { push[property] = this._diff[property] }
-                        }\n`);
-                    }
-                }
-            }
+    //         if (Object.entries(traps).length) {
+    //             for (let trap in traps) { 
+    //                 if (trap === 'set' || trap === 'get') {
+    //                     handlerInsert(trap, `${traps[trap]}`);
+    //                 } else handler[trap] = eval(traps[trap]);
+    //             }
+    //             if (push) {
+    //                 for (trap in handler) {
+    //                     handlerInsert(trap, `\nif (this._diff.length) {
+    //                         for (let property in this._diff) { push[property] = this._diff[property] }
+    //                     }\n`);
+    //                 }
+    //             }
+    //         }
 
-            return new Proxy(this, handler)
-        };
+    //         return new Proxy(this, handler)
+    //     };
 
-        check(what) { what ? this['CHECK '+what] : this['CHECK target'] };
+    //     check(what) { what ? console.log(this[what]) : this['check target']; };
 
-        link(state, ...observers) { 
-            if (!this.links[state]) this.links[state] = [];
-            observers.forEach(observer => this.links[state].push([`[part='${this._concern}'] ${observer[0]}`, observer[1]]))
-        };
+    //     link(state, ...observers) { 
+    //         if (!this.links[state]) this.links[state] = [];
+    //         observers.forEach(observer => this.links[state].push([`[part='${this._concern}'] ${observer[0]}`, observer[1]]))
+    //     };
 
-        toggle(etarget, state, state1, state2, event='click') { 
-            document.querySelector(`[part='${this._concern}'] ${etarget}`).addEventListener(event, _=> this[state] = (this[state] === state1) ? state2 : state1)
-        };
+    //     toggle(etarget, state, state1, state2, event='click') { 
+    //         document.querySelector(`[part='${this._concern}'] ${etarget}`).addEventListener(event, _=> this[state] = (this[state] === state1) ? state2 : state1)
+    //     };
 
-        render() {
-            if (this._concern !== 'app') {
-                let part = document.querySelector(`[part='${this._concern}']`),
-                    clone = part.cloneNode('deep');
-                this._fragment.appendChild(clone);
-                for (let diff in this._diff) {
-                    if (diff in this.links) {
-                        this.links[diff].forEach(link => this._fragment.querySelector(link[0])[link[1]] = this._diff[diff]);
-                    }
-                }
-                part.replaceWith(this._fragment);
-                this._script();
-            }
-            return true;
-        };
+    //     render() {
+    //         if (this._concern !== 'app') {
+    //             let part = document.querySelector(`[part='${this._concern}']`),
+    //                 clone = part.cloneNode('deep');
+    //             this._fragment.appendChild(clone);
+    //             for (let diff in this._diff) {
+    //                 if (diff in this.links) {
+    //                     this.links[diff].forEach(link => this._fragment.querySelector(link[0])[link[1]] = this._diff[diff]);
+    //                 }
+    //             }
+    //             part.replaceWith(this._fragment);
+    //             this._script();
+    //         }
+    //     };
 
-        __clear__() {
-            for (let property in this.state) { delete this.state[property] }
-            if (Object.entries(now.legacy[this._concern]).length) {
-                for (let property in now.legacy[this._concern]) { this[property] = now.legacy[this._concern][property] }
-            }
-        };
+    //     __clear__() {
+    //         for (let property in this.state) { delete this.state[property] }
+    //         if (Object.entries(now.legacy[this._concern]).length) {
+    //             for (let property in now.legacy[this._concern]) { this[property] = now.legacy[this._concern][property] }
+    //         }
+    //     };
         
-        __fullclear__() {
-            for (let property in this.state) { delete this.state[property] }
-            if (Object.entries(this._init).length) {
-                for (let property in this._init) { this[property] = this._init[property] }
-            }
-        }
-    };
+    //     __fullclear__() {
+    //         for (let property in this.state) { delete this.state[property] }
+    //         if (Object.entries(this._init).length) {
+    //             for (let property in this._init) { this[property] = this._init[property] }
+    //         }
+    //     }
+    // };
 
-    const now = new Store('app');
+    // const now = new Store('app');
 
     // const partCounts = {
     //     Home: 0,

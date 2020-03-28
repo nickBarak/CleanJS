@@ -28,10 +28,14 @@
             // if (now) now.legacy
             // if (now && !Object.keys(now.legacy).includes(concern)) {console.log(true)} else console.log(false);
             this._concern = concern;
+            if (now) now._activeParts = ['add', concern];
             // } else throw new Error('Stores must be initialized with a concern');
+            console.log('testing')
             if (concern === 'app') {
                 this.legacy = {test: ''};
-                this._dynasty = { app: {} }
+                this._dynasty = { app: {} };
+                this._activeParts = [];
+                console.log(this._activeParts);
             } else now.legacy = now._dynasty = concern;
             this._diff = {};
             this._init = init;
@@ -59,7 +63,10 @@
                         if (property === '_dynasty') { target._dynasty[/*document.querySelector('part').getAttribute('parent')*/'app'][value] = {}; true }
                         if (property === 'legacy') { this.legacy[value] = {}; true }
                         if (property === 'legacyExtension') { this.legacy[value[0]] = value[1]; true }
-                        if (property === 'onClear') { now.legacyExtension = [this._concern, value]; true
+                        if (property === 'onClear') { now.legacyExtension = [this._concern, value];
+                        if (property === '_activeParts') {
+                            if (this._concern === 'app') value[0] === 'add' ? this._activeParts.push(value[1]) : this._activeParts.splice(this._activeParts.indexOf(value[0]), 1);
+                        };
                         } else this._diff[property] = this.state[property] = value;
                         this.render();
                     }
@@ -119,7 +126,6 @@
                 part.replaceWith(this._fragment);
                 this._script();
             }
-            return true;
         };
 
         __clear__() {
