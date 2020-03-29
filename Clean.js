@@ -80,12 +80,12 @@ const bootstrapHTML = (sourcefile, targetdir, encoding='utf8') => {
 
 const compile = (dirname, targetlocalpath, destination, encoding='utf8') => {
     let fullpath = path.join(dirname, targetlocalpath)
-        imports = ["import { Store, Private, pId, family, list, ul, ol, select, elt, on, toggle, html, sift, show, hide, kill, revive, transition, ajax, ajaxGet, table, meld, hunt, edit, freeze, thaw } from './Clean.js'"],
-        scripts = ["const now = new Store('app');", `const partCounts = {\r\n}`, `const newInstance = part => {\r\n
+        imports = ["import { Part, Private, family, list, ul, ol, select, elt, on, toggle, html, sift, show, hide, kill, revive, transition, ajax, ajaxGet, table, meld, hunt, edit, freeze, thaw } from './Clean.js'"],
+        scripts = ["const now = new Part('app');", `const partCounts = {\r\n}`, `const newInstance = part => {\r\n
             const partName = \`\${part}\${partCounts[part] ? ' '+partCounts[part] : ''}\`;\r\n
             partCounts[part]++;\r\n
             let newElt = document.createElement(part);\r\n
-            newElt.setAttribute('pId', partName);\r\n
+            newElt.setAttribute('id', partName);\r\n
             return newElt;\r\n
         };`],
         texts = [],
@@ -115,19 +115,10 @@ const compile = (dirname, targetlocalpath, destination, encoding='utf8') => {
                                 },\r\n
                                     stateInit = meld(true, ${storeDefaults ? /state: ([\s\S]*?})/.exec(storeDefaults)[1] : '{}'}, data),\r\n
                                     trapsInit = meld(true, ${storeDefaults ? /traps: ([\s\S]*?})/.exec(storeDefaults)[1] : '{}'}, traps),\r\n
-                                    part = newInstance('${filename}'),\r\n
-                                    store = new Store(part.getAttribute('pId'), now, place, script, stateInit, trapsInit),\r\n
-                                    fragment = new DocumentFragment();\r\n
-                                fragment.appendChild(part);
-                                fragment.querySelector(\`[pId='\${part.getAttribute("pId")}']\`).innerHTML = ${filename[0].toLowerCase()+filename.slice(1)}Content(stateInit);\r\n
-                                if (place) { place === 'top'\r\n
-                                    ? document.body.appendChild(part)\r\n
-                                    : pId(place)\r\n
-                                        ? pId(place).appendChild(part)\r\n
-                                        : {};\r\n
-                                };\r\n
-                                script();\r\n
-                                return part;\r\n
+                                    partElt = newInstance('${filename}');\r\n
+                                const part = new Part(partElt.id, now, place, ${filename[0].toLowerCase()+filename.slice(1)}Content, script, stateInit, trapsInit);\r\n
+                                    
+                                return partElt;\r\n
                             })();\r\n
                             return instance;\r\n
                         };`);

@@ -157,8 +157,10 @@ const path = require('path');
 // console.log(obj);
 
 // if (typeof(obj) === 'undefined') console.log('ohoij')
-let sourcefile = "c:\Users\nicho\Code\CleanJS\texts\Home.html";
+// let sourcefile = "c:\Users\nicho\Code\CleanJS\texts\Home.html";
 
-let amatch = /([A-Z][\w\d]*?)\.htm/.exec(sourcefile)[1];
+// let amatch = /([A-Z][\w\d]*?)\.htm/.exec(sourcefile)[1];
 
-console.log(amatch)
+let amatch = 'somes tr';
+
+console.log(amatch.indexOf(' ') + 1)
