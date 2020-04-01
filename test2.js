@@ -161,6 +161,9 @@ const path = require('path');
 
 // let amatch = /([A-Z][\w\d]*?)\.htm/.exec(sourcefile)[1];
 
-let amatch = 'somes tr';
+let amatch = 'somes tr*',
+    nmatch = amatch.slice(0, amatch.length -1)
 
-console.log(amatch.indexOf(' ') + 1)
+// console.log(amatch1, amatch2)
+let name1 = 'some 2sstring';
+console.log(!name1.match(/[\.\[\#>]/) && !name1.match(/ [A-Za-z]/))

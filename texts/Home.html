@@ -6,9 +6,9 @@
 <script>
     // console.log(part);
     part.link('titleText', ['#title', 'textContent']);
-    part.toggle('#title', 'titleText', 'Enjoy your stay', 'Welcome to CleanJS');
-    on('click', elt('title'), _=> now._activeParts = ['remove', 'Footer']);
-    on('click', elt('lowerSvg'), _=> now._activeParts = ['add', 'Footer', 'ChangeStateButton']);
+    part.toggle('#title', part.id, 'titleText', 'Enjoy your stay', 'Welcome to CleanJS');
+    on('click', elt('#title', part.id), _=> {now._activeParts = ['remove', 'Footer']});
+    on('click', elt('#lowerSvg', part.id), _=> now._activeParts = ['add', 'Footer', 'ChangeStateButton']);
 </script>
 
 <store>

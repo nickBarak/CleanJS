@@ -7,21 +7,21 @@
 export class Part {
     constructor (id, domain, parent, contentGen, script, init={}, traps={}, push=null) {
         this.id = id;
-        this.parent = parent;
-        this.contentGen = contentGen;
-        this._diff = {};
         this._init = this.state = init;
-        this.links = {};
-        this._script = script;
-        this._fragment = new DocumentFragment();
         if (typeof(domain) === 'undefined') {
-            this._parts = {};
-            this.legacy = {test: ''};
+            this._history = {};
+            this.legacy = {};
             this._dynasty = { app: {} };
             this._activeParts = [];
         } else {
-            domain._parts = this;
+            this._diff = {};
+            this.parent = parent;
+            this.contentGen = contentGen;
+            this.links = {};
+            this._fragment = new DocumentFragment();
+            this._script = script;
             domain._activeParts = ['add', id, parent];
+            domain._history = this;
         }
 
         if (Object.entries(init).length) {
@@ -31,36 +31,35 @@ export class Part {
         const handler = {
             get: (target, property, self) => {
                 if (property === 'check target') console.log(target);
-                if (property in this._diff) { delete this._diff[property] }
-                return ['id', '_diff', '_init', 'state', 'legacy', '_dynasty', '__clear__', 'toggle', 'link', 'links', '_fragment', 'render', 'check', '_activeParts', '_parts'].includes(property) ? target[property] : Reflect.get(target.state, property, self)
+                if (this.id !== 'app' && property in this._diff) { delete this._diff[property] }
+                return ['id', '_diff', '_init', 'state', 'legacy', '_dynasty', '__clear__', 'toggle', 'link', 'links', '_fragment', 'render', 'check', '_activeParts', '_history'].includes(property) ? target[property] : Reflect.get(target.state, property, self)
             },
             set: (target, property, value, self) => {
                 if ('id,diff,init,state'.match(property.replace(/_/g, '').toLowerCase())) {
                     console.log('State items may not resemble top-level properties')
                 } else {
-                    // if (property === '_dynasty') { target._dynasty['app'][value] = {}; true }
-                    if (property === 'legacy') { this.legacy[value] = {}; true }
-                    if (property === 'legacyExtension') { this.legacy[value[0]] = value[1]; true }
-                    if (property === 'onClear') { domain.legacyExtension = [this.id, value]; }
                     if (this.id === 'app') {
-                        if (property === '_parts') {
+                        if (property === '_history') {
                             this[property][value.id] = value;
                         } /*********************************/
+                        if (property === 'legacy') { this.legacy[value[0]] = value[1] }
+                        // if (property === 'legacyExtension') { this.legacy[value[0]] = value[1]; true }
+                        // if (property === 'onClear') { domain.legacyExtension = [this.id, value]; }
                         if (property === '_activeParts') {
                             if (value[0] === 'add') {
                                 this._activeParts.push(value[1]);
                                 value[2] === 'top' ? edit('app', this._dynasty, {}, value[1]) : edit(value[2], this._dynasty, {}, value[1]);
-                                this._parts[value[1]].render();/******** */
+                                if (value[1] in this._history) this._history[value[1]].render();/******** */
                             } else {
                                 if (this._activeParts.includes(value[1])) {
                                     this._activeParts = this._activeParts.filter(part => part !== value[1]);
                                     hunt(value[1], this._dynasty);
-                                    elt(value[1]).parentNode.removeChild(elt(value[1]));
+                                    elt('#'+value[1]).parentNode.removeChild(elt('#'+value[1]));
                                 }
                             }
                         }
-                    } else this._diff[property] = this.state[property] = value;
-                    this.render();
+                    } else this.state[property] = this.id === 'app' ? value : this._diff[property] = value;
+                    if (this.id !== 'app') this.render();
                 }
                 return true;
             }
@@ -103,36 +102,37 @@ export class Part {
         observers.forEach(observer => this.links[state].push([`[id='${this.id}'] ${observer[0]}`, observer[1]]))
     };
 
-    toggle(etarget, state, state1, state2, event='click') { 
-        elt(`[id='${this.id}'] ${etarget}`, 'query').addEventListener(event, _=> this[state] = (this[state] === state1) ? state2 : state1)
+    toggle(etarget, scope, state, state1, state2, event='click') { 
+        elt(etarget, scope).addEventListener(event, _=> this[state] = (this[state] === state1) ? state2 : state1)
     };
 
     render() {
         if (this.id !== 'app') {
-            if (elt(this.id)) {
-                let currentPart = elt(this.id),
+            if (elt('#'+this.id)) {
+                let currentPart = elt('#'+this.id),
                     clone = currentPart.cloneNode('deep');
                 this._fragment.appendChild(clone);
                 for (let diff in this._diff) {
                     if (diff in this.links) {
-                        this.links[diff].forEach(link => this._fragment.querySelector(link[0])[link[1]] = this._diff[diff]);
+                        this.links[diff].forEach(link => this._fragment.getElementById(this.id).querySelector(link[0])[link[1]] = this._diff[diff]);
                     }
                 }
                 currentPart.replaceWith(this._fragment);
             } else {
-                let newElt = elt(this.id.indexOf(' ') + 1 ? this.id.split(' ')[0] : this.id, 'new');
+                let newElt = make(this.id.indexOf(' ') + 1 ? this.id.split(' ')[0] : this.id);
                 newElt.setAttribute('id', this.id);
-                newElt.innerHTML = this.contentGen(this._init);
+                console.log(`Appending ${this.id} to ${this.parent} with: ${this.contentGen(this._init)}`)
+                newElt.innerHTML = this.contentGen(this.id, this._init);
                 this._fragment.appendChild(newElt);
-                const renderWhenReady = _=> {
-                    if (!elt(this.id))
+                const renderAfterAncestors = _=> {
+                    if (!elt('#'+this.id))
                         this.parent === 'top'
                             ? document.body.appendChild(this._fragment)
-                            : elt(this.parent)
-                                ? elt(this.parent).appendChild(this._fragment)
-                                : Promise.resolve().then(_=> renderWhenReady());
+                            : elt('#'+this.parent)
+                                ? elt('#'+this.parent).appendChild(this._fragment)
+                                : Promise.resolve().then(_=> renderAfterAncestors());
                 }
-                renderWhenReady();
+                renderAfterAncestors();
             }
             Promise.resolve().then(_=> this._script());
         }
@@ -219,9 +219,17 @@ export class Private {
 // Create a hierarchy of elements in the order that they are passed, with the first being top-level
 export const family = (...members) => members.forEach((elt, i, elts) => { if (i > 0) elts[i-1].appendChild(elt) });
 
+// Create a new element, optionally passing innerHTML and children values
+export const make = (tag, innerHTML, children) => {
+    let elt = document.createElement(tag);
+    if (innerHTML) elt.innerHTML = innerHTML;
+    if (children) children.forEach(child => elt.appendChild(child));
+    return elt;
+};
+
 // Create a custom HTML element with a list of custom inner elements from an array of contents, with optional 'class' and 'id' attributes
 export const list = (outerTag, innerTag, contents, className=false, id=false) => {
-    let list = elt(outerTag, 'new');
+    let list = make(outerTag);
     if (className) list.className = className;
     if (id) list.id = id;
     contents.forEach(item => list.appendChild(`<${innerTag}>${item}</${innertag}>`));
@@ -238,32 +246,56 @@ export const ol = (contents, className=false, id=false) => list('ol', 'li', cont
 export const select = (contents, className=false, id=false) => list('select', 'option', contents, className, id);
 
 // Identify DOM elements by a variety of methods, defaulting with querySelector. Optionally create a new element by passing 'new' as the second parameter.
-export const elt = (name, by) => {
-    switch (by) {
-        default: return document.getElementById(name);
-        case 'queryall': return document.querySelectorAll(name);
-        case 'new': return document.createElement(name);
-        case 'query': return document.querySelector(name);
-        case 'class': return document.getElementsByClassName(name)[0];
-        case 'classes': return document.getElementsByClassName(name);
-        case 'tag': return document.getElementsByTagName(name)[0];
-        case 'tags': return document.getElementsByTagName(name);
-        case 'name': return document.getElementsByName(name)[0];
-        case 'names': return document.getElementsByName(name);
-    }
-}
+export const elt = (name, scope=document) => {
+    let res,
+        all = name.endsWith('*') ? 1 : 0,
+        name1 = all ? name.slice(1, name.length-1) : name.slice(1);
+    if (scope === document) {
+        if (!name1.match(/[\.\[\#>]/) && !name1.match(/ [A-Za-z]/)) {
+            switch (name[0]) {
+                case '#': res = scope.getElementById(name1); break;
+                case '.': res = scope.getElementsByClassName(name1); break;
+                case '@': res = scope.getElementsByName(name1); break;
+                default: res = scope.getElementsByTagName(name[0]+name1);
+            }
+        } else res = scope.querySelectorAll(name[0]+name1);
+    } else res = document.getElementById(scope)
+        ? document.getElementById(scope).querySelectorAll(name[0]+name1)
+        : null;
+    if (res) {
+        if (res instanceof Element) { return res
+        } else return all ? res : res[0];
+    } else return null;
+};
+
+
+export const css = element => /* return element selector */{};
 
 // Add an event listener to an element. Optionally set the fourth parameter to 'false' to allow page refreshing.
-export const on = (event, elt, cb, preventDefault=true) => elt.addEventListener(event, evt => { 
+export const on = (event, element, callback, preventDefault=true) => element.addEventListener(event, evt => { 
+    callback();
     if (preventDefault) evt.preventDefault();
-    cb();
 })
+
+// Listen to events triggered by nested elements identified by a selector
+export const bubble = (event, selector, callback, preventDefault=true, observer=document) => {
+    on(event, observer, evt => {
+        if (evt.target.closest(selector)) {
+            callback();
+        }
+    }, preventDefault)
+};
 
 // Add an event listener to an element that switches between two states. Defaults to handle click events.
 export const toggle = (target, state, state1, state2, event='click') => on(event, target, _=> state = (state === state1) ? state2 : state1);
 
-// Briefly adjust the innerHTML of an element
-export const html = (el, inner, by) => elt(el).innerHTML = inner;
+// Briefly adjust the innerHTML of any elements identified by a selector
+export const html = (selector, innerHTML) => {
+    let elts = elt(selector);
+    elts.length > 1
+        ? elts.forEach(elt => elt.innerHTML = innerHTML)
+        : elts.innerHTML = innerHTML;
+};
 
 
 // Function Composition
@@ -301,7 +333,7 @@ export const kill = (...elts) => sift(elts).forEach(elt => elt.style.display = '
 export const revive = (display, ...elts) => sift(elts).forEach(elt => elt.style.display = display);
 
 // Either hide or kill an element and show or revive another, respectively
-export const transition = (mode, from, to, display) => { 
+export const shift = (mode, from, to, display) => { 
     if (mode === 'hide') { hide(from); show(to) }
     else if (mode === 'kill') { kill(from), revive(display, to) }
 };
@@ -476,12 +508,14 @@ export default {
     // now,
     Private,
     family,
+    make,
     list,
     ul,
     ol,
     select,
     elt,
     on,
+    bubble,
     toggle,
     html,
     sift,
@@ -489,7 +523,7 @@ export default {
     hide,
     kill,
     revive,
-    transition,
+    shift,
     // active,
     // shown,
     // live,

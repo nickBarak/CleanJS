@@ -50,7 +50,7 @@ const bootstrapHTML = (sourcefile, targetdir, encoding='utf8') => {
             if (getMatches(newContent)) getMatches(newContent).forEach(newMatch => {
                 let data = /(?:data ?= ?)("|')(.*?)\1(?=( *>| \w.*=))/.exec(newMatch),
                     traps = /(?:traps ?= ?)("|')(.*?)\1(?=( *>| \w.*=))/.exec(newMatch),
-                    initializer = `${/[A-Z]\w*/.exec(newMatch)}('${parent}'${data ? ', '+data[2] : ''}${traps ? ', '+traps[2] : ''})`;
+                    initializer = `${/[A-Z]\w*/.exec(newMatch)}(place${data ? ', '+data[2] : ''}${traps ? ', '+traps[2] : ''})`;
                 initializers.push(initializer);
                 src = src.replace(newMatch, '\${'+initializer+'.outerHTML}');
                 innerBootstrapHTML(newMatch);
@@ -66,8 +66,8 @@ const bootstrapHTML = (sourcefile, targetdir, encoding='utf8') => {
         let data = /(?:data ?= ?)("|')(.*?)\1(?=( *>| \w.*=))/.exec(match),
             traps = /(?:traps ?= ?)("|')(.*?)\1(?=( *>| \w.*=))/.exec(match),
             initializer;
-        if (/([A-Z][\w\d]*?)\.htm/.exec(sourcefile)) {
-            initializer = `${/[A-Z]\w*/.exec(match)}('${/([A-Z][\w\d]*?)\.htm/.exec(sourcefile)[1]}'${data ? ', '+data[2] : ''}${traps ? ', '+traps[2] : ''})`;
+        if (/([A-Z][\w]*?)\.htm/.exec(sourcefile)) {
+            initializer = `${/[A-Z]\w*/.exec(match)}(place${data ? ', '+data[2] : ''}${traps ? ', '+traps[2] : ''})`;
             innerBootstrapHTML(match);
         } else {
             initializer = `${/[A-Z]\w*/.exec(match)}('top'${data ? ', '+data[2] : ''}${traps ? ', '+traps[2] : ''})`;
@@ -81,13 +81,14 @@ const bootstrapHTML = (sourcefile, targetdir, encoding='utf8') => {
 const compile = (dirname, targetlocalpath, destination, encoding='utf8') => {
     let fullpath = path.join(dirname, targetlocalpath)
         imports = ["import { Part, Private, family, list, ul, ol, select, elt, on, toggle, html, sift, show, hide, kill, revive, transition, ajax, ajaxGet, table, meld, hunt, edit, freeze, thaw } from './Clean.js'"],
-        scripts = ["const now = new Part('app');", `const partCounts = {\r\n}`, `const newInstance = part => {\r\n
-            const partName = \`\${part}\${partCounts[part] ? ' '+partCounts[part] : ''}\`;\r\n
-            partCounts[part]++;\r\n
-            let newElt = document.createElement(part);\r\n
-            newElt.setAttribute('id', partName);\r\n
-            return newElt;\r\n
-        };`],
+        scripts = ["const now = new Part('app');", `const partCounts = {\r\n}`, 
+`const newInstance = part => {
+    const partName = \`\${part}\${partCounts[part] ? ' '+partCounts[part] : ''}\`;
+    partCounts[part]++;
+    let newElt = document.createElement(part);
+    newElt.setAttribute('id', partName);
+    return newElt;
+};`],
         texts = [],
         initialRender = bootstrapHTML(path.join(dirname, 'model.html'), fullpath)[1].map(initializer => initializer.replace(/\((null)/, '(document.body')+';');
     walk(fullpath, 'html', encoding)
@@ -108,23 +109,32 @@ const compile = (dirname, targetlocalpath, destination, encoding='utf8') => {
                                 .forEach(item => imports.push(item));
                             script.replace(/import.*/g, '');
                         }
-                        scripts.push(`const ${filename} = (place='top', data={}, traps={}) => {\r\n
-                            const instance = (_=> {\r\n
-                                const script = _=> {\r\n
-                                    ${script.split(/<script.*>/)[1]}\r\n
-                                },\r\n
-                                    stateInit = meld(true, ${storeDefaults ? /state: ([\s\S]*?})/.exec(storeDefaults)[1] : '{}'}, data),\r\n
-                                    trapsInit = meld(true, ${storeDefaults ? /traps: ([\s\S]*?})/.exec(storeDefaults)[1] : '{}'}, traps),\r\n
-                                    partElt = newInstance('${filename}');\r\n
-                                const part = new Part(partElt.id, now, place, ${filename[0].toLowerCase()+filename.slice(1)}Content, script, stateInit, trapsInit);\r\n
-                                    
-                                return partElt;\r\n
-                            })();\r\n
-                            return instance;\r\n
-                        };`);
+                        scripts.push(
+`const ${filename} = (place='top', data={}, traps={}) => {
+    const instance = (_=> {
+        const script = _=> {
+            ${script.split(/<script.*>/)[1]}},
+            stateInit = meld(true, ${storeDefaults ? /state: ([\s\S]*?})/.exec(storeDefaults)[1].match(/\w/) ? /state: ([\s\S]*?})/.exec(storeDefaults)[1] : '{}' : '{}'}, data),
+            trapsInit = meld(true, ${storeDefaults ? /traps: ([\s\S]*?})/.exec(storeDefaults)[1].match(/\w/) ? /traps: ([\s\S]*?})/.exec(storeDefaults)[1] : '{}' : '{}'}, traps),
+            partElt = newInstance('${filename}'),
+            part = new Part(partElt.id, now, place, ${filename[0].toLowerCase()+filename.slice(1)}Content, script, stateInit, trapsInit),
+            fragment = new DocumentFragment();
+        fragment.appendChild(partElt);
+        fragment.getElementById(partElt.id).innerHTML = ${filename[0].toLowerCase()+filename.slice(1)}Content(partElt.id, stateInit);
+        if (place) { place === 'top'
+            ? document.body.appendChild(partElt)
+            : elt('#'+place)
+                ? elt('#'+place).appendChild(partElt)
+                : {};
+        };
+        script();
+        return partElt;
+    })();
+    return instance;
+};`);
                     });
             };
-            texts.push(`const ${filename[0].toLowerCase()+filename.slice(1)}Content = data => \`${bootstrapHTML(locate(filename+'.html', fullpath), fullpath)[0].split('\r\n\r\n<script')[0].replace(/( |>(?<=<.*?))(?=data\..*?(?: |<\/.*?>))/g, '$1\${').replace(/(\s|<)(?<=\${data\.[^\s<]*?(\s|<))/g, '}$1')}\`;`);
+            texts.push(`const ${filename[0].toLowerCase()+filename.slice(1)}Content = (place, data) => \`${bootstrapHTML(locate(filename+'.html', fullpath), fullpath)[0].split('\r\n\r\n<script')[0].replace(/( |>(?<=<.*?))(?=data\..*?(?: |<\/.*?>))/g, '$1\${').replace(/(\s|<)(?<=\${data\.[^\s<]*?(\s|<))/g, '}$1')}\`;`);
             scripts[1] = scripts[1].split('{\r\n')[0]+`{\r\n${filename}: 0${scripts[1].split('{\r\n')[1] === '}' ? '\r\n' : ',\r\n'}`+scripts[1].split('{\r\n')[1];
         });
     let usedParts = scripts.map(script => /const ([\w\d]*)/.exec(script)[1]);
