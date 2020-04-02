@@ -1,4 +1,4 @@
-import { Part, Private, family, list, ul, ol, select, elt, on, toggle, html, sift, show, hide, kill, revive, transition, ajax, ajaxGet, table, meld, hunt, edit, freeze, thaw } from './Clean.js'
+import { Part, Private, family, list, ul, ol, select, elt, on, bubble, onClick, onSubmit, onHover, onChange, toggle, html, sift, show, hide, kill, revive, transition, ajax, ajaxGet, table, meld, hunt, edit, freeze, thaw } from './Clean.js'
 
 
 const homeContent = (place, data) => `<div><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320"><path fill="#ddd" fill-opacity="1" d="M0,160L48,138.7C96,117,192,75,288,58.7C384,43,480,53,576,85.3C672,117,768,171,864,197.3C960,224,1056,224,1152,192C1248,160,1344,96,1392,64L1440,32L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path></svg></div>
@@ -30,23 +30,23 @@ const newInstance = part => {
     return newElt;
 };
 
-const Home = (place='top', data={}, traps={}) => {
+const Home = (place='app', data={}, traps={}) => {
     const instance = (_=> {
         const script = _=> {
-                // console.log(part);
-    part.link('titleText', ['#title', 'textContent']);
-    part.toggle('#title', part.id, 'titleText', 'Enjoy your stay', 'Welcome to CleanJS');
-    on('click', elt('#title', part.id), _=> {now._activeParts = ['remove', 'Footer']});
-    on('click', elt('#lowerSvg', part.id), _=> now._activeParts = ['add', 'Footer', 'ChangeStateButton']);
+                let title = elt('#title', pId),
+        footer = elt('Footer', pId);
+
+    onClick(title, _=> now.live.includes(footer.id) ? now.kill(footer) : now.revive(footer));
 },
             stateInit = meld(true, { title: 'CleanJS', greeting: 'Welcome' }, data),
             trapsInit = meld(true, {}, traps),
             partElt = newInstance('Home'),
-            part = new Part(partElt.id, now, place, homeContent, script, stateInit, trapsInit),
+            pId = partElt.id,
+            part = new Part(pId, now, place, homeContent, script, stateInit, trapsInit),
             fragment = new DocumentFragment();
         fragment.appendChild(partElt);
-        fragment.getElementById(partElt.id).innerHTML = homeContent(partElt.id, stateInit);
-        if (place) { place === 'top'
+        fragment.getElementById(pId).innerHTML = homeContent(pId, stateInit);
+        if (place) { place === 'app'
             ? document.body.appendChild(partElt)
             : elt('#'+place)
                 ? elt('#'+place).appendChild(partElt)
@@ -58,7 +58,7 @@ const Home = (place='top', data={}, traps={}) => {
     return instance;
 };
 
-const ChangeStateButton = (place='top', data={}, traps={}) => {
+const ChangeStateButton = (place='app', data={}, traps={}) => {
     const instance = (_=> {
         const script = _=> {
                 // const changeStateBtn = document.querySelector('[piece=changeStateBtn]');
@@ -83,11 +83,12 @@ const ChangeStateButton = (place='top', data={}, traps={}) => {
             stateInit = meld(true, {}, data),
             trapsInit = meld(true, {}, traps),
             partElt = newInstance('ChangeStateButton'),
-            part = new Part(partElt.id, now, place, changeStateButtonContent, script, stateInit, trapsInit),
+            pId = partElt.id,
+            part = new Part(pId, now, place, changeStateButtonContent, script, stateInit, trapsInit),
             fragment = new DocumentFragment();
         fragment.appendChild(partElt);
-        fragment.getElementById(partElt.id).innerHTML = changeStateButtonContent(partElt.id, stateInit);
-        if (place) { place === 'top'
+        fragment.getElementById(pId).innerHTML = changeStateButtonContent(pId, stateInit);
+        if (place) { place === 'app'
             ? document.body.appendChild(partElt)
             : elt('#'+place)
                 ? elt('#'+place).appendChild(partElt)
@@ -99,7 +100,7 @@ const ChangeStateButton = (place='top', data={}, traps={}) => {
     return instance;
 };
 
-const Footer = (place='top', data={}, traps={}) => {
+const Footer = (place='app', data={}, traps={}) => {
     const instance = (_=> {
         const script = _=> {
                 // console.log(homeStore);
@@ -111,11 +112,12 @@ const Footer = (place='top', data={}, traps={}) => {
     }, data),
             trapsInit = meld(true, {}, traps),
             partElt = newInstance('Footer'),
-            part = new Part(partElt.id, now, place, footerContent, script, stateInit, trapsInit),
+            pId = partElt.id,
+            part = new Part(pId, now, place, footerContent, script, stateInit, trapsInit),
             fragment = new DocumentFragment();
         fragment.appendChild(partElt);
-        fragment.getElementById(partElt.id).innerHTML = footerContent(partElt.id, stateInit);
-        if (place) { place === 'top'
+        fragment.getElementById(pId).innerHTML = footerContent(pId, stateInit);
+        if (place) { place === 'app'
             ? document.body.appendChild(partElt)
             : elt('#'+place)
                 ? elt('#'+place).appendChild(partElt)
@@ -128,6 +130,6 @@ const Footer = (place='top', data={}, traps={}) => {
 };
 
 
-Home('top', {title: `pgood mate`, greeting: 'Go away'});
-Footer('top', {randomKey: 'randomVal', footerValue: 'SHA-BOO-YA'}, {onetrap: _=> console.log("henlo")});
-Home('top', {title: 9097, greeting: 'soksdf'});
+Home('app', {title: `pgood mate`, greeting: 'Go away'});
+Footer('app', {randomKey: 'randomVal', footerValue: 'SHA-BOO-YA'}, {onetrap: _=> console.log("henlo")});
+Home('app', {title: 9097, greeting: 'soksdf'});

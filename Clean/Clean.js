@@ -7,21 +7,28 @@
 export class Part {
     constructor (id, domain, parent, contentGen, script, init={}, traps={}, push=null) {
         this.id = id;
-        this._init = this.state = init;
+        this.init = this.state = init;
         if (typeof(domain) === 'undefined') {
-            this._history = {};
+            this.history = {};
             this.legacy = {};
-            this._dynasty = { app: {} };
-            this._activeParts = [];
+            this.dynasty = { app: {} };
+            this.live = [];
         } else {
-            this._diff = {};
+            this.diff = {};
             this.parent = parent;
             this.contentGen = contentGen;
             this.links = {};
-            this._fragment = new DocumentFragment();
-            this._script = script;
-            domain._activeParts = ['add', id, parent];
-            domain._history = this;
+            this.fragment = new DocumentFragment();
+            this.script = script;
+            this.dynasty = {[id]: {}};
+            domain.live = ['add', id];
+            domain.history = [id, new Proxy(this, {
+                get: (target, property, self) => Reflect.get(target, property),
+                set: (target, property, value, self) => {
+                    if (property === 'dynasty') value[0] === 'add' ? edit(this.id, this[property], domain.history[value[1]].dynasty[value[1]], value[1]) : hunt(value[1], this.dynasty);
+                    return true;
+                }
+            })];
         }
 
         if (Object.entries(init).length) {
@@ -31,34 +38,42 @@ export class Part {
         const handler = {
             get: (target, property, self) => {
                 if (property === 'check target') console.log(target);
-                if (this.id !== 'app' && property in this._diff) { delete this._diff[property] }
-                return ['id', '_diff', '_init', 'state', 'legacy', '_dynasty', '__clear__', 'toggle', 'link', 'links', '_fragment', 'render', 'check', '_activeParts', '_history'].includes(property) ? target[property] : Reflect.get(target.state, property, self)
+                if (this.id !== 'app' && property in this.diff) { delete this.diff[property] }
+                return ['id', 'diff', 'init', 'state', 'legacy', 'dynasty', 'clear', 'toggle', 'link', 'links', 'fragment', 'render', 'check', 'live', 'history', 'parent', 'kill', 'revive'].includes(property) ? target[property] : Reflect.get(target.state, property, self)
             },
             set: (target, property, value, self) => {
                 if ('id,diff,init,state'.match(property.replace(/_/g, '').toLowerCase())) {
                     console.log('State items may not resemble top-level properties')
                 } else {
                     if (this.id === 'app') {
-                        if (property === '_history') {
-                            this[property][value.id] = value;
+                        if (property === 'history') {
+                            this[property][value[0]] = value[1];
                         } /*********************************/
                         if (property === 'legacy') { this.legacy[value[0]] = value[1] }
                         // if (property === 'legacyExtension') { this.legacy[value[0]] = value[1]; true }
                         // if (property === 'onClear') { domain.legacyExtension = [this.id, value]; }
-                        if (property === '_activeParts') {
+                        if (property === 'live') {
                             if (value[0] === 'add') {
-                                this._activeParts.push(value[1]);
-                                value[2] === 'top' ? edit('app', this._dynasty, {}, value[1]) : edit(value[2], this._dynasty, {}, value[1]);
-                                if (value[1] in this._history) this._history[value[1]].render();/******** */
+                                this.live.push(value[1]);
+                                Promise.resolve().then(_=> {
+                                    edit(this.history[value[1]].parent, this.dynasty, {}, value[1]);
+                                    if (this.history[value[1]].parent !== 'app') {
+                                        this.history[this.history[value[1]].parent].dynasty = value;
+                                    };
+                                });
+                                if (value[1] in this.history) this.history[value[1]].render();/******** */
                             } else {
-                                if (this._activeParts.includes(value[1])) {
-                                    this._activeParts = this._activeParts.filter(part => part !== value[1]);
-                                    hunt(value[1], this._dynasty);
-                                    elt('#'+value[1]).parentNode.removeChild(elt('#'+value[1]));
+                                if (this.live.includes(value[1])) {
+                                    this.live = this.live.filter(part => part !== value[1]);
+                                    hunt(value[1], this.dynasty);
+                                    // hunt(value[1], this.history[value[2]].dynasty);
+                                    if (elt('#'+value[1])) elt('#'+value[1]).parentNode.removeChild(elt('#'+value[1]));
                                 }
                             }
                         }
-                    } else this.state[property] = this.id === 'app' ? value : this._diff[property] = value;
+                    } else {
+                    }
+                    this.state[property] = this.id === 'app' ? value : this.diff[property] = value;
                     if (this.id !== 'app') this.render();
                 }
                 return true;
@@ -83,8 +98,8 @@ export class Part {
             }
             if (push) {
                 for (trap in handler) {
-                    handlerInsert(trap, `\nif (this._diff.length) {
-                        for (let property in this._diff) { push[property] = this._diff[property] }
+                    handlerInsert(trap, `\nif (this.diff.length) {
+                        for (let property in this.diff) { push[property] = this.diff[property] }
                     }\n`);
                 }
             }
@@ -94,8 +109,6 @@ export class Part {
     };
 
     check(what) { what ? console.log(this[what]) : this['check target']; };
-
-    bye() { /* remove from active parts */ }
 
     link(state, ...observers) { 
         if (!this.links[state]) this.links[state] = [];
@@ -111,46 +124,49 @@ export class Part {
             if (elt('#'+this.id)) {
                 let currentPart = elt('#'+this.id),
                     clone = currentPart.cloneNode('deep');
-                this._fragment.appendChild(clone);
-                for (let diff in this._diff) {
+                this.fragment.appendChild(clone);
+                for (let diff in this.diff) {
                     if (diff in this.links) {
-                        this.links[diff].forEach(link => this._fragment.getElementById(this.id).querySelector(link[0])[link[1]] = this._diff[diff]);
+                        this.links[diff].forEach(link => this.fragment.getElementById(this.id).querySelector(link[0])[link[1]] = this.diff[diff]);
                     }
                 }
-                currentPart.replaceWith(this._fragment);
+                currentPart.replaceWith(this.fragment);
             } else {
                 let newElt = make(this.id.indexOf(' ') + 1 ? this.id.split(' ')[0] : this.id);
                 newElt.setAttribute('id', this.id);
-                console.log(`Appending ${this.id} to ${this.parent} with: ${this.contentGen(this._init)}`)
-                newElt.innerHTML = this.contentGen(this.id, this._init);
-                this._fragment.appendChild(newElt);
+                newElt.innerHTML = this.contentGen(this.id, this.init);
+                this.fragment.appendChild(newElt);
                 const renderAfterAncestors = _=> {
                     if (!elt('#'+this.id))
-                        this.parent === 'top'
-                            ? document.body.appendChild(this._fragment)
+                        this.parent === 'app'
+                            ? document.body.appendChild(this.fragment)
                             : elt('#'+this.parent)
-                                ? elt('#'+this.parent).appendChild(this._fragment)
+                                ? elt('#'+this.parent).appendChild(this.fragment)
                                 : Promise.resolve().then(_=> renderAfterAncestors());
                 }
                 renderAfterAncestors();
             }
-            Promise.resolve().then(_=> this._script());
+            Promise.resolve().then(_=> this.script());
         }
     };
 
-    __clear__() {
+    clear() {
         for (let property in this.state) { delete this.state[property] }
         if (Object.entries(domain.legacy[this.id]).length) {
             for (let property in now.legacy[this.id]) { this[property] = domain.legacy[this.id][property] }
         }
     };
     
-    __fullclear__() {
+    fullclear() {
         for (let property in this.state) { delete this.state[property] }
-        if (Object.entries(this._init).length) {
-            for (let property in this._init) { this[property] = this._init[property] }
+        if (Object.entries(this.init).length) {
+            for (let property in this.init) { this[property] = this.init[property] }
         }
-    }
+    };
+
+    kill(part) { if (this.id === 'app') this.live = ['remove', part.id] };
+
+    revive(ghost) { if (this.id === 'app') this.live = ['add', ghost.id] };
 };
 
 // export const now = new Store('app');
@@ -275,7 +291,7 @@ export const css = element => /* return element selector */{};
 export const on = (event, element, callback, preventDefault=true) => element.addEventListener(event, evt => { 
     callback();
     if (preventDefault) evt.preventDefault();
-})
+});
 
 // Listen to events triggered by nested elements identified by a selector
 export const bubble = (event, selector, callback, preventDefault=true, observer=document) => {
@@ -284,6 +300,17 @@ export const bubble = (event, selector, callback, preventDefault=true, observer=
             callback();
         }
     }, preventDefault)
+};
+
+export const onClick = (element, callback, preventDefault=true) => on('click', element, callback, preventDefault);
+
+export const onSubmit = (element, callback, preventDefault=true) => on('submit', element, callback, preventDefault);
+
+export const onChange = (element, callback, preventDefault=true) => on('change', element, callback, preventDefault);
+
+export const onHover = (element, onmouseover, onmouseout, preventDefault=true) => {
+    on('mouseover', element, onmouseover, preventDefault);
+    on('mouseout', element, onmouseout, preventDefault);
 };
 
 // Add an event listener to an element that switches between two states. Defaults to handle click events.
@@ -516,6 +543,10 @@ export default {
     elt,
     on,
     bubble,
+    onClick,
+    onSubmit,
+    onHover,
+    onChange,
     toggle,
     html,
     sift,

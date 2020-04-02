@@ -70,7 +70,7 @@ const bootstrapHTML = (sourcefile, targetdir, encoding='utf8') => {
             initializer = `${/[A-Z]\w*/.exec(match)}(place${data ? ', '+data[2] : ''}${traps ? ', '+traps[2] : ''})`;
             innerBootstrapHTML(match);
         } else {
-            initializer = `${/[A-Z]\w*/.exec(match)}('top'${data ? ', '+data[2] : ''}${traps ? ', '+traps[2] : ''})`;
+            initializer = `${/[A-Z]\w*/.exec(match)}('app'${data ? ', '+data[2] : ''}${traps ? ', '+traps[2] : ''})`;
         }
         initializers.push(initializer);
         src = src.replace(match, '\${'+initializer+'.outerHTML}');
@@ -80,7 +80,7 @@ const bootstrapHTML = (sourcefile, targetdir, encoding='utf8') => {
 
 const compile = (dirname, targetlocalpath, destination, encoding='utf8') => {
     let fullpath = path.join(dirname, targetlocalpath)
-        imports = ["import { Part, Private, family, list, ul, ol, select, elt, on, toggle, html, sift, show, hide, kill, revive, transition, ajax, ajaxGet, table, meld, hunt, edit, freeze, thaw } from './Clean.js'"],
+        imports = ["import { Part, Private, family, list, ul, ol, select, elt, on, bubble, onClick, onSubmit, onHover, onChange, toggle, html, sift, show, hide, kill, revive, transition, ajax, ajaxGet, table, meld, hunt, edit, freeze, thaw } from './Clean.js'"],
         scripts = ["const now = new Part('app');", `const partCounts = {\r\n}`, 
 `const newInstance = part => {
     const partName = \`\${part}\${partCounts[part] ? ' '+partCounts[part] : ''}\`;
@@ -110,18 +110,19 @@ const compile = (dirname, targetlocalpath, destination, encoding='utf8') => {
                             script.replace(/import.*/g, '');
                         }
                         scripts.push(
-`const ${filename} = (place='top', data={}, traps={}) => {
+`const ${filename} = (place='app', data={}, traps={}) => {
     const instance = (_=> {
         const script = _=> {
             ${script.split(/<script.*>/)[1]}},
             stateInit = meld(true, ${storeDefaults ? /state: ([\s\S]*?})/.exec(storeDefaults)[1].match(/\w/) ? /state: ([\s\S]*?})/.exec(storeDefaults)[1] : '{}' : '{}'}, data),
             trapsInit = meld(true, ${storeDefaults ? /traps: ([\s\S]*?})/.exec(storeDefaults)[1].match(/\w/) ? /traps: ([\s\S]*?})/.exec(storeDefaults)[1] : '{}' : '{}'}, traps),
             partElt = newInstance('${filename}'),
-            part = new Part(partElt.id, now, place, ${filename[0].toLowerCase()+filename.slice(1)}Content, script, stateInit, trapsInit),
+            pId = partElt.id,
+            part = new Part(pId, now, place, ${filename[0].toLowerCase()+filename.slice(1)}Content, script, stateInit, trapsInit),
             fragment = new DocumentFragment();
         fragment.appendChild(partElt);
-        fragment.getElementById(partElt.id).innerHTML = ${filename[0].toLowerCase()+filename.slice(1)}Content(partElt.id, stateInit);
-        if (place) { place === 'top'
+        fragment.getElementById(pId).innerHTML = ${filename[0].toLowerCase()+filename.slice(1)}Content(pId, stateInit);
+        if (place) { place === 'app'
             ? document.body.appendChild(partElt)
             : elt('#'+place)
                 ? elt('#'+place).appendChild(partElt)
