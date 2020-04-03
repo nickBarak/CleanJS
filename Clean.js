@@ -80,7 +80,7 @@ const bootstrapHTML = (sourcefile, targetdir, encoding='utf8') => {
 
 const compile = (dirname, targetlocalpath, destination, encoding='utf8') => {
     let fullpath = path.join(dirname, targetlocalpath)
-        imports = ["import { Part, Private, family, list, ul, ol, select, elt, on, bubble, onClick, onSubmit, onHover, onChange, toggle, html, sift, show, hide, kill, revive, transition, ajax, ajaxGet, table, meld, hunt, edit, freeze, thaw } from './Clean.js'"],
+        imports = ["import { Part, Private, family, make, list, ul, ol, select, elt, on, bubble, onClick, onSubmit, onHover, onChange, toggle, html, sift, show, hide, kill, revive, transition, ajax, ajaxGet, table, meld, hunt, edit, freeze, thaw } from './Clean.js'"],
         scripts = ["const now = new Part('app');", `const partCounts = {\r\n}`, 
 `const newInstance = part => {
     const partName = \`\${part}\${partCounts[part] ? ' '+partCounts[part] : ''}\`;
@@ -113,6 +113,7 @@ const compile = (dirname, targetlocalpath, destination, encoding='utf8') => {
 `const ${filename} = (place='app', data={}, traps={}) => {
     const instance = (_=> {
         const script = _=> {
+            const node = elt('#'+pId);
             ${script.split(/<script.*>/)[1]}},
             stateInit = meld(true, ${storeDefaults ? /state: ([\s\S]*?})/.exec(storeDefaults)[1].match(/\w/) ? /state: ([\s\S]*?})/.exec(storeDefaults)[1] : '{}' : '{}'}, data),
             trapsInit = meld(true, ${storeDefaults ? /traps: ([\s\S]*?})/.exec(storeDefaults)[1].match(/\w/) ? /traps: ([\s\S]*?})/.exec(storeDefaults)[1] : '{}' : '{}'}, traps),

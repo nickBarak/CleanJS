@@ -5,81 +5,47 @@
 
 
 export class Part {
-    constructor (id, domain, parent, contentGen, script, init={}, traps={}, push=null) {
+    constructor (id, domain, parent, contentGen, script, init={}, traps={}) {
         this.id = id;
-        this.init = this.state = init;
-        if (typeof(domain) === 'undefined') {
-            this.history = {};
-            this.legacy = {};
-            this.dynasty = { app: {} };
-            this.live = [];
-        } else {
-            this.diff = {};
-            this.parent = parent;
-            this.contentGen = contentGen;
-            this.links = {};
-            this.fragment = new DocumentFragment();
-            this.script = script;
-            this.dynasty = {[id]: {}};
-            domain.live = ['add', id];
-            domain.history = [id, new Proxy(this, {
-                get: (target, property, self) => Reflect.get(target, property),
-                set: (target, property, value, self) => {
-                    if (property === 'dynasty') value[0] === 'add' ? edit(this.id, this[property], domain.history[value[1]].dynasty[value[1]], value[1]) : hunt(value[1], this.dynasty);
-                    return true;
-                }
-            })];
-        }
-
-        if (Object.entries(init).length) {
-            for (let entry in init) { this.state[entry] = init[entry] }
-        };
+        this.state = init;
+        this.parent = parent;
+        this.meta = {contentGen, script, init, diff: {}, fragment: new DocumentFragment()};
+        this.links = {};
+        this.status = {visible: true, live: true, active: true, shown: true};
+        this.dynasty = {[id]: {}};
 
         const handler = {
             get: (target, property, self) => {
                 if (property === 'check target') console.log(target);
-                if (this.id !== 'app' && property in this.diff) { delete this.diff[property] }
-                return ['id', 'diff', 'init', 'state', 'legacy', 'dynasty', 'clear', 'toggle', 'link', 'links', 'fragment', 'render', 'check', 'live', 'history', 'parent', 'kill', 'revive'].includes(property) ? target[property] : Reflect.get(target.state, property, self)
+                if (this.id !== 'app' && property in this.meta.diff) { delete this.meta.diff[property] }
+                return ['id','state', 'legacy', 'dynasty', 'clear', 'toggle', 'link', 'links', 'render', 'check', 'live', 'parts', 'parent', 'kill', 'revive', 'status', 'meta', 'show', 'hide', 'activate', 'deactivate'].includes(property)
+                    ? target[property]
+                    : ['diff', 'init', 'fragment', 'contentGen', 'script'].includes(property)
+                        ? Reflect.get(target.meta, property, self)
+                        : Reflect.get(target.state, property, self);
             },
             set: (target, property, value, self) => {
-                if ('id,diff,init,state'.match(property.replace(/_/g, '').toLowerCase())) {
-                    console.log('State items may not resemble top-level properties')
+                if (['id', 'state', 'legacy', 'clear', 'toggle', 'link', 'links', 'render', 'check', 'parent', 'kill', 'revive', 'meta', 'diff', 'init', 'fragment', 'contenGen', 'script'].join(',').match(property.replace(/_/g, '').toLowerCase())) {
+                    console.log('State items may not resemble core part properties')
                 } else {
-                    if (this.id === 'app') {
-                        if (property === 'history') {
-                            this[property][value[0]] = value[1];
-                        } /*********************************/
-                        if (property === 'legacy') { this.legacy[value[0]] = value[1] }
-                        // if (property === 'legacyExtension') { this.legacy[value[0]] = value[1]; true }
-                        // if (property === 'onClear') { domain.legacyExtension = [this.id, value]; }
-                        if (property === 'live') {
-                            if (value[0] === 'add') {
-                                this.live.push(value[1]);
-                                Promise.resolve().then(_=> {
-                                    edit(this.history[value[1]].parent, this.dynasty, {}, value[1]);
-                                    if (this.history[value[1]].parent !== 'app') {
-                                        this.history[this.history[value[1]].parent].dynasty = value;
-                                    };
-                                });
-                                if (value[1] in this.history) this.history[value[1]].render();/******** */
-                            } else {
-                                if (this.live.includes(value[1])) {
-                                    this.live = this.live.filter(part => part !== value[1]);
-                                    hunt(value[1], this.dynasty);
-                                    // hunt(value[1], this.history[value[2]].dynasty);
-                                    if (elt('#'+value[1])) elt('#'+value[1]).parentNode.removeChild(elt('#'+value[1]));
-                                }
-                            }
+                    if (property === 'status') {
+                        switch (value) {
+                            case 'live': this[property].live = true; break;
+                            case 'dead': this[property].live = false; break;
+                            case 'active': this[property].active = true; break;
+                            case 'inactive': this[property].active = false; break;
+                            case 'shown': this[property].shown = true; break;
+                            case 'hidden': this[property].shown = false; break;
+                            default: console.log('Invalid condition');
                         }
-                    } else {
                     }
-                    this.state[property] = this.id === 'app' ? value : this.diff[property] = value;
-                    if (this.id !== 'app') this.render();
+                    if (property === 'dynasty') value[0] === 'add' ? edit(this[property], this.id, value[1], domain.parts[value[1]].dynasty[value[1]]) : hunt(value[1], this.dynasty);
+                    this.state[property] = this.meta.diff[property] = value;
+                    this.render();
                 }
-                return true;
+            return true;
             }
-        };
-
+        }
         const handlerInsert = (trap, plus) => {
             let value = handler[trap];
             value = `${value}`.split('return');
@@ -96,19 +62,18 @@ export class Part {
                     handlerInsert(trap, `${traps[trap]}`);
                 } else handler[trap] = eval(traps[trap]);
             }
-            if (push) {
-                for (trap in handler) {
-                    handlerInsert(trap, `\nif (this.diff.length) {
-                        for (let property in this.diff) { push[property] = this.diff[property] }
-                    }\n`);
-                }
-            }
         }
 
-        return new Proxy(this, handler)
+        let proxy = new Proxy(this, handler);
+        if (domain) domain.parts = proxy;
+        return proxy;
     };
 
-    check(what) { what ? console.log(this[what]) : this['check target']; };
+    check(what) { what
+        ? console.log(`${this.id} - ${what}: `, typeof(this[what]) === 'string'
+                ? `"${this[what]}"`
+                : this[what], `(${typeof(this[what])})`)
+        : this['check target']; };
 
     link(state, ...observers) { 
         if (!this.links[state]) this.links[state] = [];
@@ -124,29 +89,29 @@ export class Part {
             if (elt('#'+this.id)) {
                 let currentPart = elt('#'+this.id),
                     clone = currentPart.cloneNode('deep');
-                this.fragment.appendChild(clone);
-                for (let diff in this.diff) {
+                this.meta.fragment.appendChild(clone);
+                for (let diff in this.meta.diff) {
                     if (diff in this.links) {
-                        this.links[diff].forEach(link => this.fragment.getElementById(this.id).querySelector(link[0])[link[1]] = this.diff[diff]);
+                        this.links[diff].forEach(link => this.meta.fragment.getElementById(this.id).querySelector(link[0])[link[1]] = this.meta.diff[diff]);
                     }
                 }
-                currentPart.replaceWith(this.fragment);
+                currentPart.replaceWith(this.meta.fragment);
             } else {
                 let newElt = make(this.id.indexOf(' ') + 1 ? this.id.split(' ')[0] : this.id);
                 newElt.setAttribute('id', this.id);
-                newElt.innerHTML = this.contentGen(this.id, this.init);
-                this.fragment.appendChild(newElt);
+                newElt.innerHTML = this.meta.contentGen(this.id, this.meta.init);
+                this.meta.fragment.appendChild(newElt);
                 const renderAfterAncestors = _=> {
                     if (!elt('#'+this.id))
                         this.parent === 'app'
-                            ? document.body.appendChild(this.fragment)
+                            ? document.body.appendChild(this.meta.fragment)
                             : elt('#'+this.parent)
-                                ? elt('#'+this.parent).appendChild(this.fragment)
+                                ? elt('#'+this.parent).appendChild(this.meta.fragment)
                                 : Promise.resolve().then(_=> renderAfterAncestors());
                 }
                 renderAfterAncestors();
             }
-            Promise.resolve().then(_=> this.script());
+            this.meta.script();
         }
     };
 
@@ -159,15 +124,85 @@ export class Part {
     
     fullclear() {
         for (let property in this.state) { delete this.state[property] }
-        if (Object.entries(this.init).length) {
-            for (let property in this.init) { this[property] = this.init[property] }
+        if (Object.entries(this.meta.init).length) {
+            for (let property in this.meta.init) { this[property] = this.meta.init[property] }
         }
     };
 
-    kill(part) { if (this.id === 'app') this.live = ['remove', part.id] };
+    kill() { this.status = 'live' };
 
-    revive(ghost) { if (this.id === 'app') this.live = ['add', ghost.id] };
+    revive() { this.status = 'dead' };
+
+    activate () { this.status = 'active' };
+
+    deactivate() { this.status = 'inactive' };
+
+    show() { this.status = 'shown' };
+    
+    hide() { this.status = 'hidden' };
 };
+
+export class Observer {
+    constructor(id) {
+        this.id = id;
+        this.parts = {};
+        this.legacy = {};
+        this.dynasty = { app: {} };
+        this.live = [];
+
+        const handler = {
+            get: (target, property, self) => {
+                return Reflect.get(target, property, self);
+            },
+            set: (target, property, value, self) => {
+                if (property === 'parts') {
+                    this[property][value.id] = value;
+                } /*********************************/
+                if (property === 'legacy') { this.legacy[value[0]] = value[1] }
+                // if (property === 'legacyExtension') { this.legacy[value[0]] = value[1]; true }
+                // if (property === 'onClear') { domain.legacyExtension = [this.id, value]; }
+                if (property === 'live') {
+                    if (value[0] === 'add') {
+                        this.live.push(value[1]);
+                        if (this.parts[value[1]]) {
+                            edit(this.dynasty, this.parts[value[1]].parent, value[1], {});
+                            edit(this.parts[value[1]].status, 'live', null, true);
+                            if (this.parts[value[1]].parent !== 'app') {
+                                this.parts[this.parts[value[1]].parent].dynasty = value;
+                            }
+                            this.parts[value[1]].render();/******** */
+                        } else {
+                            Promise.resolve().then(_=> {
+                                edit(this.dynasty, this.parts[value[1]].parent, value[1], {});
+                                edit(this.parts[value[1]].status, 'live', null, true);
+                                if (this.parts[value[1]].parent !== 'app') {
+                                    this.parts[this.parts[value[1]].parent].dynasty = value;
+                                }
+                            });
+                        }
+                    } else {
+                        if (this.live.includes(value[1])) {
+                        this.live = this.live.filter(part => part !== value[1]);
+                        hunt(value[1], this.dynasty);
+                        // hunt(value[1], this.parts[value[2]].dynasty);
+                        if (elt('#'+value[1])) elt('#'+value[1]).parentNode.removeChild(elt('#'+value[1]));
+                        edit(this.parts[value[1]].status, 'live', null, false);
+                        }
+                    }
+                }
+                return true;
+            }
+        }
+        return new Proxy(this, handler);
+    };
+
+    check(what) { what
+        ? console.log(`${this.id} - ${what}: `, typeof(this[what]) === 'string'
+                ? `"${this[what]}"`
+                : this[what], `(${typeof(this[what])})`)
+        : this['check target']; };
+}
+
 
 // export const now = new Store('app');
 
@@ -483,17 +518,17 @@ export const hunt = (prey, object) => {
 };
 
 // Edit a property that is nested within a deep object by adding a property or changing its value
-export const edit = (interest, object, value, key=null) => {
-    if (interest in object) { 
-        if (key) { object[interest][key] = value }
-        else object[interest] = value
+export const edit = (object, key, newkey, value) => {
+    if (key in object) { 
+        if (newkey) { object[key][newkey] = value }
+        else object[key] = value
     } else {
         for (let subObject in object) {
-            if (interest in object[subObject]) { 
-                if (key) { object[subObject][interest][key] = value }
-                else object[subObject][interest] = value
+            if (key in object[subObject]) { 
+                if (newkey) { object[subObject][key][newkey] = value }
+                else object[subObject][key] = value
             }
-            else edit(interest, object[subObject], value, key)
+            else edit(object[subObject], key, newkey, value)
         }
     }
 };
@@ -532,6 +567,7 @@ export const thaw = obj => {
 
 export default {
     Part,
+    Observer,
     // now,
     Private,
     family,
