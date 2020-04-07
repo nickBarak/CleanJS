@@ -177,7 +177,7 @@
 
 
 // app.js
-import Clean, { elt } from './Clean/Clean.js';
+// import Clean, { elt } from './Clean/Clean.js';
 // import { link } from 'fs';
 
 // const now = new Store('app');
@@ -211,13 +211,13 @@ import Clean, { elt } from './Clean/Clean.js';
             // }
 
 
-const render = initializers => {
-    let fragment = new DocumentFragment(),
-        part = document.querySelector('[part="Part 2"]'),
-        newPart = part.cloneNode('deep');
-    newPart.childNodes[0].textContent = 'no no no';
-    fragment.appendChild(newPart);
-    part.replaceWith(fragment);
+// const render = initializers => {
+//     let fragment = new DocumentFragment(),
+//         part = document.querySelector('[part="Part 2"]'),
+//         newPart = part.cloneNode('deep');
+//     newPart.childNodes[0].textContent = 'no no no';
+//     fragment.appendChild(newPart);
+//     part.replaceWith(fragment);
 
 
     // document.replaceChild(Part(init, traps), document.querySelector('[part=Part 2]'));
@@ -230,5 +230,22 @@ const render = initializers => {
     //     }, DOMNodes)
     // };
     // compareDOMs(fragment.querySelectorAll('*'), document.querySelectorAll('*'))
-};
-render();
+// };
+// // render();
+
+// let rax = /((?!some).*)/g;
+// let str = 'some aphrasedsaf';
+// console.log(rax.exec(str)[1]);
+
+let route = `routex.to['a good'][place].where["I"].go`;
+
+route = route.replace(/[\]\"\']/g, '').replace(/[\.\[]/g, '$*@#').split('$*@#');
+
+let obs = {routex: {to: {["a good"]: {place: {where: {I: {go: 'hi'}}}}}}};
+
+
+route.forEach(str => {
+    obs = obs[str] ? obs[str] : obs;
+})
+
+console.log(obs)

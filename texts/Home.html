@@ -1,20 +1,20 @@
 <div><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320"><path fill="#ddd" fill-opacity="1" d="M0,160L48,138.7C96,117,192,75,288,58.7C384,43,480,53,576,85.3C672,117,768,171,864,197.3C960,224,1056,224,1152,192C1248,160,1344,96,1392,64L1440,32L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path></svg></div>
-<h1 id="title">data.greeting to data.title</h1>
+<h1 id="title">*greeting to *title</h1>
 <ChangeStateButton></ChangeStateButton>
 <div id="lowerSvg"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 319"><path fill="#7a7aa3" fill-opacity="1" d="M0,160L48,138.7C96,117,192,75,288,58.7C384,43,480,53,576,85.3C672,117,768,171,864,197.3C960,224,1056,224,1152,192C1248,160,1344,96,1392,64L1440,32L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path></svg></div>
 
 <script>
+    defaults = { title: 'CleanJS', greeting: 'Welcome' };
+
+    part.link('observer', 'store', 'observable')
+    now.observable = 42;
+    part.check('observer');
     node.appendChild(make('div', 'shabooya'));
-    let title = elt('#title', pId),
-        footer = elt('Footer', pId);
+    let title = elt('#title', pId, false),
+        footer = elt('Footer', pId, false);
 
     onClick(title, _=> {
         !now.parts[pId].status.active ? part.activate() : part.deactivate();
         part.check('status')
     });
 </script>
-
-<store>
-    state: { title: 'CleanJS', greeting: 'Welcome' }
-    traps: {}
-</store>

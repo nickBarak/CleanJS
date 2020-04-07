@@ -55,19 +55,19 @@
 //     "    var u0= 'sojdk,'\r\n" +
 //     '    console.log(now);\r\n' +
 //     '})();';
-let match = `<div id=somethng init="{some: "thing", out: [2"'3, 'there']}" someKey="lalLA lks" traps="" links='["osd", "aow23l"]' skssks='skskSKSKsksk '     ><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320"><path fill="#ddd" fill-//opacity="1" d="M0,160L48,138.7C96,117,192,75,288,58.7C384,43,480,53,576,85.3C672,117,768,171,864,197.3C960,224,1056,224,1152,192C1248,160,1344,96,1392,64L1440,32L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path></svg></div>
-<!-- <h1>Welcome to CleanJS</h1>
-<ChangeStateButton  id="23234m" data= 'oho234' >adsf</ChangeStateButton> -->
-// <div id="lowerSvg"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 319"><path fill="#7a7aa3" fill-opacity="1" d="M0,160L48,138.7C96,117,192,75,288,58.7C384,43,480,53,576,85.3C672,117,768,171,864,197.3C960,224,1056,224,1152,192C1248,160,1344,96,1392,64L1440,32L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path></svg></div>`;
+// let match = `<div id=somethng init="{some: "thing", out: [2"'3, 'there']}" someKey="lalLA lks" traps="" links='["osd", "aow23l"]' skssks='skskSKSKsksk '     ><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320"><path fill="#ddd" fill-//opacity="1" d="M0,160L48,138.7C96,117,192,75,288,58.7C384,43,480,53,576,85.3C672,117,768,171,864,197.3C960,224,1056,224,1152,192C1248,160,1344,96,1392,64L1440,32L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path></svg></div>
+// <!-- <h1>Welcome to CleanJS</h1>
+// <ChangeStateButton  id="23234m" data= 'oho234' >adsf</ChangeStateButton> -->
+// // <div id="lowerSvg"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 319"><path fill="#7a7aa3" fill-opacity="1" d="M0,160L48,138.7C96,117,192,75,288,58.7C384,43,480,53,576,85.3C672,117,768,171,864,197.3C960,224,1056,224,1152,192C1248,160,1344,96,1392,64L1440,32L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path></svg></div>`;
 
-// res = file.match(/<[A-Z].*>/g).map(match => match.split('>')[0] + '>');
-// res = /(<[A-Z]\w* *id=.*) .*=/.exec(res)[1].replace(/ +/g, ' ');
-// console.log(/([A-Z]\w*)/g.exec(res))
+// // res = file.match(/<[A-Z].*>/g).map(match => match.split('>')[0] + '>');
+// // res = /(<[A-Z]\w* *id=.*) .*=/.exec(res)[1].replace(/ +/g, ' ');
+// // console.log(/([A-Z]\w*)/g.exec(res))
 
-// let home = (undefined) => console.log('hi');
+// // let home = (undefined) => console.log('hi');
 
-const fs = require('fs');
-const path = require('path');
+// const fs = require('fs');
+// const path = require('path');
 
 // let pathname = `c:\Users\nicho\Code\CleanJS\texts\common\Header.html`;
 // console.log(pathname.match('Header.html').length > 0 == true);
@@ -161,9 +161,35 @@ const path = require('path');
 
 // let amatch = /([A-Z][\w\d]*?)\.htm/.exec(sourcefile)[1];
 
-let amatch = 'somes tr*',
-    nmatch = amatch.slice(0, amatch.length -1)
+// let amatch = 'somes tr*',
+//     nmatch = amatch.slice(0, amatch.length -1)
 
-// console.log(amatch1, amatch2)
-let name1 = 'some 2sstring';
-console.log(!name1.match(/[\.\[\#>]/) && !name1.match(/ [A-Za-z]/))
+// // console.log(amatch1, amatch2)
+// let name1 = 'some 2sstring';
+// console.log(!name1.match(/[\.\[\#>]/) && !name1.match(/ [A-Za-z]/))
+
+// let routes = ['style.color', 'favColor'],
+//     links = {};
+
+// routes.forEach(route => links[route] = []);
+// console.log(links)
+// for (let link in links) console.log(link.split('.'))
+// console.log(routes[0].split('.'), routes[1].split('.'))
+
+// let text = "<div id='footerDiv'>${(_=> {console.log('something'); return data.someFirstKey === 97983244 ? 'and your' : 'oops'}! <strong>${data.footerValue}</strong> ${'last'}!</div>",
+//     rx = /}\)\(\)}(?<!\${\(_=> {([^}][^\)][^\(][^\)][^}])*)/g,
+//     finds = text.match(/(}\)\(\)})(?<!\${\(_=> {(?!.*?}\)\(\)}))/g),
+//     rx2 = /}!(?<=\${\(_=> {(?!.*?}\)\(\)}).*?)/;
+
+// while (text.match(rx2)) text = text.replace(rx2, '})()}');
+
+// console.log(text)
+
+// let txt = 'id,state,legacy,clear';
+// let toMatch = 'state';
+
+// console.log(txt.match(toMatch));
+
+let avar = 'something';
+let ary = [...avar];
+console.log(ary);

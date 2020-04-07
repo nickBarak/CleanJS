@@ -1,16 +1,10 @@
-<div id="footerDiv">and your <strong>data.footerValue</strong> last</div>
+<div id="footerDiv">!{console.log('something'); return *someFirstKey === 97983244 ? 'and your' : 'oops'}! <strong>*footerValue</strong> !{'last'}!</div>
 
 <script params="pets, age, name=null">
     // console.log(homeStore);
     let a = 'b';
-</script>
-
-<store>
-    state: {
+    defaults = {
         someFirstKey: 97983244,
         footerValue: 'Some other thing'
-    }
-    traps: {
-
-    }
-</store>
+    };
+</script>

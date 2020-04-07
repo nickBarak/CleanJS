@@ -5,28 +5,28 @@
 
 
 export class Part {
-    constructor (id, domain, parent, contentGen, script, init={}, traps={}) {
+    constructor (id, domain, parent, contentGen, script, init={}) {
         this.id = id;
         this.state = init;
         this.parent = parent;
-        this.meta = {contentGen, script, init, diff: {}, fragment: new DocumentFragment()};
+        this.meta = {domain, contentGen, script, init, diff: {}, fragment: new DocumentFragment(), renderFlag: 0};
         this.links = {};
         this.status = {visible: true, live: true, active: true, shown: true};
         this.dynasty = {[id]: {}};
 
         const handler = {
             get: (target, property, self) => {
-                if (property === 'check target') console.log(target);
-                if (this.id !== 'app' && property in this.meta.diff) { delete this.meta.diff[property] }
-                return ['id','state', 'legacy', 'dynasty', 'clear', 'toggle', 'link', 'links', 'render', 'check', 'live', 'parts', 'parent', 'kill', 'revive', 'status', 'meta', 'show', 'hide', 'activate', 'deactivate'].includes(property)
+                if (property === 'check target') console.log(this.id + ': ', target);
+                if (property in this.meta.diff) delete this.meta.diff[property];
+                return ['id', 'domain', 'state', 'legacy', 'dynasty', 'clear', 'toggle', 'link', 'links', 'render', 'check', 'live', 'parts', 'parent', 'kill', 'revive', 'status', 'meta', 'show', 'hide', 'activate', 'deactivate', 'blink'].includes(property)
                     ? target[property]
                     : ['diff', 'init', 'fragment', 'contentGen', 'script'].includes(property)
                         ? Reflect.get(target.meta, property, self)
                         : Reflect.get(target.state, property, self);
             },
             set: (target, property, value, self) => {
-                if (['id', 'state', 'legacy', 'clear', 'toggle', 'link', 'links', 'render', 'check', 'parent', 'kill', 'revive', 'meta', 'diff', 'init', 'fragment', 'contenGen', 'script'].join(',').match(property.replace(/_/g, '').toLowerCase())) {
-                    console.log('State items may not resemble core part properties')
+                if (['id', 'state', 'legacy', 'clear', 'toggle', 'link', 'links', 'render', 'check', 'parent', 'kill', 'revive', 'meta', 'diff', 'init', 'fragment', 'contenGen', 'script', 'store'].includes(property.replace(/_/g, '').toLowerCase())) {
+                    console.log('State items may not resemble core part properties', `(${property})`)
                 } else {
                     if (property === 'status') {
                         switch (value) {
@@ -40,27 +40,12 @@ export class Part {
                         }
                     }
                     if (property === 'dynasty') value[0] === 'add' ? edit(this[property], this.id, value[1], domain.parts[value[1]].dynasty[value[1]]) : hunt(value[1], this.dynasty);
-                    this.state[property] = this.meta.diff[property] = value;
-                    this.render();
+                    if (this.state[property] !== value) {
+                        this.state[property] = this.meta.diff[property] = value;
+                        // this.render()
+                    };
                 }
             return true;
-            }
-        }
-        const handlerInsert = (trap, plus) => {
-            let value = handler[trap];
-            value = `${value}`.split('return');
-            value.splice(1, 0, 'return');
-            value.splice(1, 0, plus);
-            value.unshift('(');
-            value.push(')');
-            handler[trap] = eval(value.join(''));
-        }
-        
-        if (Object.entries(traps).length) {
-            for (let trap in traps) { 
-                if (trap === 'set' || trap === 'get') {
-                    handlerInsert(trap, `${traps[trap]}`);
-                } else handler[trap] = eval(traps[trap]);
             }
         }
 
@@ -74,14 +59,49 @@ export class Part {
                 ? `"${this[what]}"`
                 : this[what], `(${typeof(this[what])})`)
         : this['check target']; };
-
-    link(state, ...observers) { 
-        if (!this.links[state]) this.links[state] = [];
-        observers.forEach(observer => this.links[state].push([`[id='${this.id}'] ${observer[0]}`, observer[1]]))
+    link(observer, selector, route, attempt=0) {
+        observer = splitRoute(observer, true);
+        route = splitRoute(route, true);
+        if (!this.links[observer]) this.links[observer] = {};
+        if (!this.links[observer][route]) this.links[observer][route] = [];
+        let newObservables = selector === 'store'
+            ? ['[store]']
+            : elt(selector)
+                ? elt(selector, null, true).map(match => `[parts][${pluralize(match.id.split(' ')[0])}][${match.id}]`)
+                : undefined;
+        if (!newObservables) throw new Error(`No element found by selector "${selector}"`);
+        newObservables.forEach(observable => this.links[observer][route].push(observable))
+        let routes = [];
+        for (let link in this.links[observer]) {
+            for (let base in this.links[observer][link]) {
+                routes.push(`${this.links[observer][link][base]}${route}`);
+            }
+        };
+        let routeValue,
+            i = 0;
+        while (!routeValue && i < routes.length) {
+            routeValue = parseRoute(routes[i], this.meta.domain);
+            i++;
+        };
+        console.log(routes)
+        
+        if (!routeValue) {
+            if (attempt < 10) {
+                Promise.resolve().then(_=> {
+                this.link(observer, selector, route, attempt+1);
+                });
+            } else throw new Error(`No value found for route "${route}" with selector "${selector}"`);
+        } else {
+            let splitObserver = splitRoute(observer);
+            splitObserver.length === 1
+                ? this[splitObserver[0]] = routeValue
+                : edit(this.state, splitObserver[splitObserver.length - 2], splitObserver[splitObserver.length - 1, routeValue]);
+            this.meta.domain.links = [this, observer, [...routes]];
+        };
     };
 
     toggle(etarget, scope, state, state1, state2, event='click') { 
-        elt(etarget, scope).addEventListener(event, _=> this[state] = (this[state] === state1) ? state2 : state1)
+        elt(etarget, false, scope).addEventListener(event, _=> this[state] = (this[state] === state1) ? state2 : state1)
     };
 
     render() {
@@ -90,9 +110,10 @@ export class Part {
                 let currentPart = elt('#'+this.id),
                     clone = currentPart.cloneNode('deep');
                 this.meta.fragment.appendChild(clone);
+                console.log('DIFF', this.meta.diff)
                 for (let diff in this.meta.diff) {
                     if (diff in this.links) {
-                        this.links[diff].forEach(link => this.meta.fragment.getElementById(this.id).querySelector(link[0])[link[1]] = this.meta.diff[diff]);
+                        this.links[diff].forEach(route => this.meta.fragment.getElementById(this.id).querySelector(link[0])[link[1]] = this.meta.diff[diff]);
                     }
                 }
                 currentPart.replaceWith(this.meta.fragment);
@@ -115,20 +136,6 @@ export class Part {
         }
     };
 
-    clear() {
-        for (let property in this.state) { delete this.state[property] }
-        if (Object.entries(domain.legacy[this.id]).length) {
-            for (let property in now.legacy[this.id]) { this[property] = domain.legacy[this.id][property] }
-        }
-    };
-    
-    fullclear() {
-        for (let property in this.state) { delete this.state[property] }
-        if (Object.entries(this.meta.init).length) {
-            for (let property in this.meta.init) { this[property] = this.meta.init[property] }
-        }
-    };
-
     kill() { this.status = 'live' };
 
     revive() { this.status = 'dead' };
@@ -140,57 +147,110 @@ export class Part {
     show() { this.status = 'shown' };
     
     hide() { this.status = 'hidden' };
+
+    save() {  };
+
+    load() {
+        for (let property in this.state) { delete this.state[property] }
+        if (Object.entries(domain.legacy[this.id]).length) {
+            for (let property in this.domain.legacy[this.id]) { this[property] = domain.legacy[this.id][property] }
+        }
+    };
+
+    pull() {  };
+
+    clear() {
+        for (let property in this.state) { delete this.state[property] }
+        if (Object.entries(this.meta.init).length) {
+            for (let property in this.meta.init) { this[property] = this.meta.init[property] }
+        }
+    };
+
+    blink(observerRoute, value) {
+        let splitObserver = splitRoute(observerRoute);
+        parseRoute(observerRoute, this.state)
+            ? splitObserver.length === 1
+                ? this[splitObserver[0]] = value
+                : edit(this.state, splitObserver[splitObserver.length - 2], observerRoute.length - 1, value)
+            : {};
+    };
 };
 
-export class Observer {
+export class Nexus {
     constructor(id) {
         this.id = id;
         this.parts = {};
-        this.legacy = {};
         this.dynasty = { app: {} };
         this.live = [];
+        this.store = {};
+        this.links = {};
 
         const handler = {
             get: (target, property, self) => {
-                return Reflect.get(target, property, self);
+                if (property === 'check target') console.log(this.id + ': ', target);
+                return ['check', 'store', 'dynasty', 'live', 'parts' , 'links', 'id'].includes(property) ? target[property] : Reflect.get(target.store, property, self);
             },
             set: (target, property, value, self) => {
-                if (property === 'parts') {
-                    this[property][value.id] = value;
-                } /*********************************/
-                if (property === 'legacy') { this.legacy[value[0]] = value[1] }
-                // if (property === 'legacyExtension') { this.legacy[value[0]] = value[1]; true }
-                // if (property === 'onClear') { domain.legacyExtension = [this.id, value]; }
-                if (property === 'live') {
-                    if (value[0] === 'add') {
-                        this.live.push(value[1]);
-                        if (this.parts[value[1]]) {
-                            edit(this.dynasty, this.parts[value[1]].parent, value[1], {});
-                            edit(this.parts[value[1]].status, 'live', null, true);
-                            if (this.parts[value[1]].parent !== 'app') {
-                                this.parts[this.parts[value[1]].parent].dynasty = value;
-                            }
-                            this.parts[value[1]].render();/******** */
-                        } else {
-                            Promise.resolve().then(_=> {
+                if (['id', 'dynasty', 'check', 'store'].includes(property.replace(/_/g, '').toLowerCase())) {
+                    console.log('Store items may not resemble core part properties', `(${property})`)
+                } else {
+                    if (property === 'parts') {
+                        let partClass = pluralize(value.id.split(' ')[0]);
+                        if (!this.parts[partClass] && value instanceof Part) this.parts[partClass] = {};
+                        value instanceof Part ? this.parts[partClass][value.id] = value : console.log('Parts must be instances of the Part class');
+                    } /*********************************/
+                    else if (property === 'live') {
+                        if (value[0] === 'add') {
+                            this.live.push(value[1]);
+                            if (this.parts[value[1]]) {
                                 edit(this.dynasty, this.parts[value[1]].parent, value[1], {});
                                 edit(this.parts[value[1]].status, 'live', null, true);
                                 if (this.parts[value[1]].parent !== 'app') {
                                     this.parts[this.parts[value[1]].parent].dynasty = value;
                                 }
-                            });
-                        }
-                    } else {
-                        if (this.live.includes(value[1])) {
-                        this.live = this.live.filter(part => part !== value[1]);
-                        hunt(value[1], this.dynasty);
-                        // hunt(value[1], this.parts[value[2]].dynasty);
-                        if (elt('#'+value[1])) elt('#'+value[1]).parentNode.removeChild(elt('#'+value[1]));
-                        edit(this.parts[value[1]].status, 'live', null, false);
+                                this.parts[value[1]].render();/******** */
+                            } else {
+                                Promise.resolve().then(_=> {
+                                    edit(this.dynasty, this.parts[value[1]].parent, value[1], {});
+                                    edit(this.parts[value[1]].status, 'live', null, true);
+                                    if (this.parts[value[1]].parent !== 'app') {
+                                        this.parts[this.parts[value[1]].parent].dynasty = value;
+                                    }
+                                });
+                            }
+                        } else {
+                            if (this.live.includes(value[1])) {
+                            this.live = this.live.filter(part => part !== value[1]);
+                            hunt(value[1], this.dynasty, true);
+                            // hunt(value[1], this.parts[value[2]].dynasty);
+                            if (elt('#'+value[1])) elt('#'+value[1]).parentNode.removeChild(elt('#'+value[1]));
+                            edit(this.parts[value[1]].status, 'live', null, false);
+                            }
                         }
                     }
-                }
+                    else if (property === 'links') {
+                        value[0] instanceof Part
+                            ? value[2].forEach(route => {
+                                if (!this.links[route]) this.links[route] = [];
+                                this.links[route].push([value[0].id, value[1]]);
+                                })
+                            : console.log('Linked object must of an instance of the Part class')
+                    } 
+                    else {
+                        if (this.store[property] !== value) {
+                            this.store[property] = value;
+                            let route = `${trail(property, this.store) ? '[store]' + trail(property, this.store) : '[store]'}[${property}]`,
+                                links = this.links[route];
+                            links
+                                ? links.length 
+                                    ? links.forEach(link => {
+                                        this.parts[pluralize(link[0].split(' ')[0])][link[0]].blink(link[1], value)})
+                                    : {}
+                                : {}; 
+                        }
+                    }
                 return true;
+                }
             }
         }
         return new Proxy(this, handler);
@@ -200,7 +260,14 @@ export class Observer {
         ? console.log(`${this.id} - ${what}: `, typeof(this[what]) === 'string'
                 ? `"${this[what]}"`
                 : this[what], `(${typeof(this[what])})`)
-        : this['check target']; };
+        : this['check target'];
+    };
+
+    update(observable, value) { 
+        hunt(observable, this.links).forEach(observer => {
+        this.parts[observer[0].split(' ')[0]][observer[0]].blink(observer[1], value)
+        })
+    };
 }
 
 
@@ -297,7 +364,8 @@ export const ol = (contents, className=false, id=false) => list('ol', 'li', cont
 export const select = (contents, className=false, id=false) => list('select', 'option', contents, className, id);
 
 // Identify DOM elements by a variety of methods, defaulting with querySelector. Optionally create a new element by passing 'new' as the second parameter.
-export const elt = (name, scope=document) => {
+export const elt = (name, scope=document, array=false) => {
+    if (scope === null) scope = document
     let res,
         all = name.endsWith('*') ? 1 : 0,
         name1 = all ? name.slice(1, name.length-1) : name.slice(1);
@@ -313,10 +381,11 @@ export const elt = (name, scope=document) => {
     } else res = document.getElementById(scope)
         ? document.getElementById(scope).querySelectorAll(name[0]+name1)
         : null;
-    if (res) {
-        if (res instanceof Element) { return res
-        } else return all ? res : res[0];
-    } else return null;
+    return res
+        ? res.nodeType
+            ? array ? [res] : res
+            : all ? array ? [...res] : res : array ? [res[0]] : res[0]
+        : null;
 };
 
 
@@ -475,18 +544,16 @@ const switchHeader = type => {
 
 // Create a valid HTML table element from pre-structured data
 export const table = (data) => {
-    let table = elt('table', 'new');
-    let columns = elt('tr', 'new');
+    let table = make('table');
+    let columns = make('tr');
     for (let column in data[0]) {
-        let th = elt('th', 'new');
-        th.innerHTML = column;
+        let th = make('th', column);
         columns.appendChild(th);
     }
     for (let item in data) {
-        let row = elt('tr', 'new');
+        let row = make('tr');
         for (let prop in item) {
-            let td = elt('td', 'new');
-            td.innerHTML = data[item][prop];
+            let td = make('td', data[item][prop]);
             row.appendChild(td);
         }
         table.appendChild(row);
@@ -507,11 +574,15 @@ export const meld = (overwrite, ...objs) => {
 };
 
 // Find and remove a property from a deep object
-export const hunt = (prey, object) => {
+export const hunt = (prey, object, kill=false) => {
     if (prey in object) { delete object[prey] }
     else {
         for (let subObject in object) {
-            if (prey in object[subObject]) { delete object[subObject][prey] }
+            if (prey in object[subObject]) { 
+                return kill
+                    ? delete object[subObject][prey]
+                    : object[subObject][prey]
+            }
             else hunt(prey, object[subObject]);
         }
     }
@@ -557,8 +628,52 @@ export const thaw = obj => {
     });
     console.log('Object has been thawed but remains non-extensible');
     return obj;
+};
+
+export const splitRoute = (route, recombine=false) => {
+    route = route
+        .replace(/^\./, '')
+        .replace(/[\]\"\']/g, '')
+        .replace(/[\.\[]/g, '$*@#')
+        .split('$*@#')
+    if (route.indexOf('') + 1) route.splice(route.indexOf(''), 1);
+    return recombine
+        ? route.length > 1
+            ? `[${route[0]}][${route.slice(1).join('][')}]`
+            : `[${route[0]}]`
+        : route;
+};
+
+export const trail = (key, object, ...marks) => {
+    if (key in object) return null;
+    else {
+        for (let subObject in object) {
+            if (key in object[subObject]) {
+                marks.push(subObject);
+                return `${marks[0] ? `[${marks[0]}]` : ''}[${marks.join('][')}]`;
+            }
+            else {
+                marks.push(subObject);
+                trail(key, object[subObject], marks);
+            }
+        }
+    }
 }
 
+// Return a nested value from an object with a route in the form of a string. Supports both dot and bracket notation
+export const parseRoute = (route, object) => {
+    splitRoute(route).forEach(prop => object = (object && object[prop]) ? object[prop] : undefined)
+    return object
+};
+
+export const pluralize = string => 
+    ['s', 'x', 'z'].includes(string[string.length - 1])
+        ? string + 'es'
+        : string.endsWith('h')
+            ? ['c', 's'].includes(string[string.length - 2])
+                ? string + 'es'
+                : string + 's'
+            : string + 's';
 
 // Animation
 
@@ -567,8 +682,9 @@ export const thaw = obj => {
 
 export default {
     Part,
-    Observer,
+    Nexus,
     // now,
+    // Eye,
     Private,
     family,
     make,
@@ -601,5 +717,9 @@ export default {
     hunt,
     edit,
     freeze,
-    thaw
+    thaw,
+    trail,
+    splitRoute,
+    parseRoute,
+    pluralize
 };
