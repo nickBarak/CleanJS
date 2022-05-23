@@ -19,7 +19,7 @@
     "@babel/runtime": "^7.9.2",
     "babel-polyfill": "^6.26.0",
     "compile.js": "^1.1.4",
-    "dexie": "^2.0.4",
+    "dexie": "^3.2.2",
     "fs": "0.0.1-security",
     "idempotent-babel-polyfill": "^7.4.4",
     "test.js": "^1.0.0"
